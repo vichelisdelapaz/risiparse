@@ -5,7 +5,7 @@ import pathlib
 import re
 from typing import List
 
-def write_html(title:str, author: str, posts: List, output_dir: str) -> None:
+def write_html(title:str, author: str, posts: List, output_dir: str, bulk: bool) -> None:
     title_slug = slugify(title, title=True)
     author_slug = slugify(author, title=False)
     ext = "html"
@@ -29,7 +29,10 @@ def write_html(title:str, author: str, posts: List, output_dir: str) -> None:
         """
         f.write(html)
         for x in posts:
-            f.write(str(x[0]))
+            if bulk:
+                f.write(str(x))
+            else:
+                f.write(str(x[0]))
         html = """
         </body>
         </html>

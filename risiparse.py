@@ -300,7 +300,7 @@ def main(args) ->  None:
             logging.info(f"The number of post downloaded for {risitas_title} is : {post.count}")
             if not bulk:
                 logging.info(f"The number of duplicates for {risitas_title} is : {post.duplicates}")
-            write_html(risitas_title, risitas_author, post.risitas_html, args.output_dir)
+            write_html(risitas_title, risitas_author, post.risitas_html, args.output_dir, args.bulk)
     if args.create_pdf:
         html_folder_path = pathlib.Path(args.output_dir) / "risitas-html"
         htmls = list(html_folder_path.glob("*"))
