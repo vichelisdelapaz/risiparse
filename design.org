@@ -1,0 +1,106 @@
+* Risiparse
+
+** What is this?
+
+This is a project to get an offline copy of your favorite risitas.
+
+** What is a risitas?
+
+I define a risitas as a story told by a user on jeuxvideo.com and that uses images from risibank.fr.
+
+In practice this means the messages of the author (preferably marked by some kind of identifier) that tells the story.
+Which implies that all the messages from the other users(assuming the author post using one account)
+or that are offtopic are filtered out.
+
+** Why is this useful?
+
+- Protection against the 410
+- Offline copy
+- No need to click on the next page or scroll with the mouse,
+  depending on your viewer you can just press one button to go up or down.
+  And you can also toggle a dark mode with a keypress
+- Keep it under version control
+
+** Note for risitas authors
+
+- Keep a backup of your risitas on multiple devices
+- Following an identifier format would be appreciated
+- Produce a pdf,docx,markdown,org,whatever format you desire of your risitas and distribute it on different hosts(mega,ovh,1fichier...)
+- Keep it under version control
+
+** Approaches
+
+*** Identifier approach
+
+1. Check that the topic exists
+   if not go to jvarchive and compare if the version there have new stuff
+   if yes show the user the differences and if the user accepts them take the version from jv archive.
+1. Parse the author-name (first message)
+2. Get all messages of the author containing a list of identifiers (i.e (CHAPTER N|Part N|1.1|Some other text))
+3. Check if the messages are already stored and if they are different (use some hash)
+   If yes show the differences and then proceed according to user input
+4. Produce the pdf
+
+Assumptions:
+
+- The author use a single account to post messages (i.e the one used to post the first message of the topic)
+- The messages of the author are not 410ed.
+- They follow an order :
+  i.e after the n chapter you're supposed to get
+  the n + 1 chapter (does not work very well in practice, see 410 and author that post images as a result without any identifier)
+- Each chapter has an identifier (which is wrong for some risitas)
+
+This is rather fragile as it expects the author to conform to some predefined format(the best would be that jvc create a functionality
+that format user input for risitas but whatever) and that everything goes well on the jvc part (that means no ban).
+
+But if everything works the time spent on creating a pdf is 0.
+
+*** Bulk approach
+
+1. Parse the author-name (first message)
+2. Get all the messages of the authors
+3. Show the messages gathered and prompt to filter out the messages not part of the risitas
+4. Check if the messages are already stored and if they are different (use some hash)
+   If yes show the differences and then proceed according to user input
+5. Produce the pdf
+
+This is alright if the risitas is not very big but imagine if it's a risitas
+like the sasukhey one (200+ pages), a cache system system would be nice
+in that case to continue the work later.
+
+However this is robust as we're not missing anything from the author (assuming he has not been banned and he is not using another account)
+
+Also can use Selenium instead of an html parser to just take screenshots of the messages which is faster and then pdfunite the images.
+
+*** Mix Bulk and Identifier approach
+
+1. Do the bulk (without the prompt part) and the identifier approach but don't produce a pdf yet.
+   Instead output the messages gathered by these approaches
+   in a gui side by side (bulk on the left, identifier on the right) and look if there are parts missing in the
+   identifier approach and if they are in the correct order.
+
+2. If yes drag the missing part to the corresponding window.
+   Else choose the correct window and click on button to produce pdf.
+   Repeat until there is no missing part
+
+3. Produce the pdf
+
+This is the approach I'm gonna pick as it combines the best of the above approaches, i.e getting a baseline and just
+replacing when the identifier is wrong, still better than the bulk approach.
+
+*** Machine learning approach
+
+Possible to use an other algorithm than a deep net but I'm only comfortable with them for now.
+
+Use a deep net to classify messages
+
+- To get a training set, need to get all the risitas (see jvflux), or parse forums
+  that do similars stuff, or generate from scratch. Or use a pre-existing model
+
+- For my potato computer this will be costly in resources, forced to get an aws instance for fast development
+
+I think this approach is useful if a general approach is needed
+like to get stories from multiple forums not only jeuxvideo.com
+but in this case considering that I only care about risitas and not about the rest...
+
+I don't think I'm gonna choose this approach considering the points mentionned above.
