@@ -4,6 +4,7 @@ from enum import Enum
 
 class Jvc(Enum):
     AUTHOR_SELECTOR = ".bloc-header > span"
+    DELETED_AUTHOR_SELECTOR = ".bloc-pseudo-msg"
     TOTAL_SELECTOR = ".bloc-liste-num-page > span:nth-last-of-type(2)"
     MESSAGE_SELECTOR = ".conteneur-message"
     RISITAS_TEXT_SELECTOR = "[class='txt-msg text-enrichi-forum']"
