@@ -1,21 +1,25 @@
 #!/usr/bin/python3
 
 import logging
-import argparse
 import requests
 import re
 import time
 import random
-import sites_selectors
 import pathlib
-import html_to_pdf
-import sys
-import os
 
 from bs4 import BeautifulSoup
-from utils.utils import write_html, is_jvc_url, make_dirs
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from sites_selectors import Noelshack
+from utils.utils import (
+    write_html,
+    get_domain,
+    make_dirs,
+    get_selectors_and_site,
+    create_pdfs,
+    read_links,
+    get_args
+)
 from typing import List
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s: %(message)s')
@@ -89,8 +93,6 @@ class RisitasInfo():
 
     def get_total_pages(self, soup: BeautifulSoup) -> int:
         topic_symbol = soup.select_one(self.selectors.TOTAL_SELECTOR.value).text
-        if topic_symbol == "»":
-            topic_symbol = soup.select_one(self.selectors.TOTAL_SELECTOR1.value).text
         topic_pages = int(topic_symbol)
         return topic_pages
 
@@ -127,7 +129,7 @@ class Posts():
         # This is needed cuz deleted accounts are not handled
         # the same way for whatever reason...
         try:
-            current_author = post.select_one(self.selectors.CURRENT_AUTHOR_SELECTOR.value).text.strip()
+            current_author = post.select_one(self.selectors.AUTHOR_SELECTOR.value).text.strip()
         except AttributeError as e:
             # Commenting exception, because I think
             # this will spook the user more than help them
@@ -239,7 +241,7 @@ class Posts():
             contains_image = self._check_chapter_image(risitas_html)
             if contains_image:
                 logging.info(f"The current post contains chapters posted in screenshots!")
-                logging.debug(f"{risitas_html}")
+                #logging.debug(f"{risitas_html}")
                 if not self.no_resize_images:
                     risitas_html = self._get_fullscale_image(risitas_html)
             if self.bulk:
@@ -275,68 +277,31 @@ class Posts():
 
 
 def main(args) ->  None:
-    # Make sure all directories are there
     make_dirs(args.output_dir)
-    identifiers = args.identifiers
-    page_link = []
     bulk = args.bulk
-    with open(args.links) as f:
-        for link in f:
-            page_link.append(link.strip())
+    page_links = read_links(args.links)
     if not args.disable_html:
-        for link in page_link:
-            time.sleep(5)
-            is_jvc = is_jvc_url(link)
-            site = ""
-            if is_jvc:
-                selectors = sites_selectors.Jvc
-                site = "jvc"
-            else:
-                selectors = sites_selectors.Jvarchive
-                site = "jvarchive"
+        for link in page_links:
+            selectors, site = get_selectors_and_site(link)
             page_number: int = 1
-            page_downloader = PageDownloader()
+            page_downloader = PageDownloader(site)
             soup = page_downloader.download_topic_page(link)
-            logging.info(soup, link)
             risitas_info = RisitasInfo(soup, selectors)
-            risitas_author = risitas_info.author
-            risitas_title = risitas_info.title
-            post = Posts(selectors, page_downloader, site, bulk, args.no_resize_images)
+            posts = Posts(selectors, page_downloader, site, bulk, args.no_resize_images)
             for _ in range(risitas_info.pages_number):
                 soup = page_downloader.download_topic_page(
                     link, page_number
                 )
-                post.get_posts(soup, risitas_author,identifiers)
+                posts.get_posts(soup, risitas_info.author,args. identifiers)
                 page_number += 1
-            logging.info(f"The number of post downloaded for {risitas_title} is : {post.count}")
+            logging.info(f"The number of post downloaded for {risitas_info.title} is : {posts.count}")
             if not bulk:
-                logging.info(f"The number of duplicates for {risitas_title} is : {post.duplicates}")
-            write_html(risitas_title, risitas_author, post.risitas_html, args.output_dir, args.bulk)
+                logging.info(f"The number of duplicates for {risitas_info.title} is : {posts.duplicates}")
+            write_html(risitas_info.title, risitas_info.author, posts.risitas_html, args.output_dir, args.bulk)
     if args.create_pdf:
-        html_folder_path = pathlib.Path(args.output_dir) / "risitas-html"
-        htmls = list(html_folder_path.glob("*"))
-        if htmls:
-            app = html_to_pdf.QtWidgets.QApplication([])
-            page = html_to_pdf.PdfPage(args.output_dir)
-            logging.info(f"Creating pdfs...")
-            page.convert(htmls)
-            sys.exit(app.exec_())
-
+        create_pdfs(args.output_dir)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    default_links = str((pathlib.Path().cwd() / "risitas-links"))
-    # Optional argument flag which defaults to False
-    parser.add_argument("-b", "--bulk", action="store_true", default=False, help="Use this option if you want to download all the messages from the author. Default : False")
-    parser.add_argument("-p", "--create-pdf", action="store_true", default=True, help="Enable/Disable Pdf creation, Default : True")
-    parser.add_argument("--disable-html", action="store_true", default=False, help="Enable/Disable Html Download, Default : False")
-    parser.add_argument("-l","--links", action="store", default=default_links, help="The links file, Default : current dir/risitas-links")
-    # Take a list of identifiers
-    parser.add_argument('-i','--identifiers', nargs='+', help="Give a list of words that are going to be matched by the script, example: a message that has the keyword 'hors-sujet', by adding 'hors-sujet' with this option, the script will match the message that has this keyword. Default : Chapitre" , required=False, default="chapitre")
-    # Images
-    parser.add_argument('--no-resize-images', help="When the script 'thinks' that the post contains images and that they are chapters posted in screenshot, it will try to display them to their full width, Default : False" ,action="store_true", required=False, default=False)
-    # Output dir
-    parser.add_argument('-o','--output-dir',action="store" , help="Output dir, Default is current dir" , default=str(pathlib.Path.cwd()))
-    args = parser.parse_args()
+    args = get_args()
     main(args)
