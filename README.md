@@ -20,19 +20,25 @@ pip3 install -r requirements.txt
 
 ```
 kenny $ python3 risiparse.py -h
-usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--no-download] [-l LINKS] [-i IDENTIFIERS [IDENTIFIERS ...]] [--no-resize-images] [-o OUTPUT_DIR]
+usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [-l LINKS]
+                    [-i IDENTIFIERS [IDENTIFIERS ...]] [--no-resize-images] [-o OUTPUT_DIR]
 
 optional arguments:
   -h, --help            show this help message and exit
   --all-messages        Download all the messages from the author.Default : False
   --no-pdf              Default : False
+  --debug               Verbose output, Default : False
   --no-download         Default : False
   -l LINKS, --links LINKS
                         The links file, Default : current dir/risitas-links
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script,example: a message that has the keyword 'hors-sujet',by adding 'hors-sujet' with this option,the
-                        script will match the message that has this keyword.Default : chapitre
-  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot,it will try to display them to their full widthDefault : False
+                        Give a list of words that are going to be matched by the script,example: a
+                        message that has the keyword 'hors-sujet',by adding 'hors-sujet' with this
+                        option,the script will match the message that has this keyword. Default :
+                        chapitre
+  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are
+                        chapters posted in screenshot,it will try to display them to their full width
+                        Default : False
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         Output dir, Default is current dir
 ```
