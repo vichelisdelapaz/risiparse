@@ -183,7 +183,11 @@ class Posts():
                 "The post doesn't contains text, probably some image"
             )
             return False
-        return True if regexp.search(post_paragraph_text) else False
+        contains_identifiers = regexp.search(post_paragraph_text)
+        if contains_identifiers and not post.select_one("blockquote"):
+            return True
+        else:
+            return False
 
 
     def _check_post_duplicates(
@@ -203,8 +207,11 @@ class Posts():
                     ret_val = False
             return ret_val
         for i in range(len(self.risitas_raw_text)):
-            if ( risitas_html.text.lower() == self.risitas_raw_text[-i].lower()  or
-                 risitas_html.text[0:100].lower() == self.risitas_raw_text[-i][0:100].lower()
+            if (
+                    risitas_html.text.lower() ==
+                    self.risitas_raw_text[-i].lower() or
+                    risitas_html.text[0:100].lower() ==
+                    self.risitas_raw_text[-i][0:100].lower()
             ):
                 ret_val = True
         return ret_val
@@ -221,16 +228,20 @@ class Posts():
         for paragraph in paragraphs:
             if re.search(r"screen|repost|supprime", paragraph.text):
                 if (
-                        len(soup.select(self.selectors.NOELSHACK_IMG_SELECTOR.value)) >= 3 and not
-                        soup.select("blockquote") and len(soup.text.strip()) < 300
+                        len(
+                            soup.select(self.selectors.NOELSHACK_IMG_SELECTOR.value)
+                        ) >= 3 and not soup.select("blockquote") and
+                        len(soup.text.strip()) < 300
 
                 ):
                     ret_val = True
                     break
             elif not paragraph.text.strip():
                 if (
-                        len(soup.select(self.selectors.NOELSHACK_IMG_SELECTOR.value)) >= 3 and not
-                        soup.select("blockquote") and len(soup.text.strip()) < 300
+                        len(
+                            soup.select(self.selectors.NOELSHACK_IMG_SELECTOR.value)
+                        ) >= 3 and not soup.select("blockquote") and
+                        len(soup.text.strip()) < 300
                 ):
                     ret_val = True
             else:
