@@ -148,21 +148,21 @@ def get_args():
         action="store_true",
         default=False,
         help=(
-            "Use this option if you want to download"
-            "all the messages from the author. Default : False"
+            "Download all the messages from the author."
+            "Default : False"
         )
     )
     parser.add_argument(
         "--no-pdf",
         action="store_true",
         default=False,
-        help="Disable Pdf creation, Default : False"
+        help="Default : False"
     )
     parser.add_argument(
         "--no-download",
         action="store_true",
         default=False,
-        help="Disable Download, Default : False"
+        help="Default : False"
     )
     parser.add_argument(
         "-l","--links",
@@ -180,7 +180,7 @@ def get_args():
             "example: a message that has the keyword 'hors-sujet',"
             "by adding 'hors-sujet' with this option,"
             "the script will match the message that has this keyword."
-            "Default : Chapitre"
+            "Default : chapitre"
         ),
         required=False,
         default="chapitre"
