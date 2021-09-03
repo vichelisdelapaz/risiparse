@@ -14,46 +14,57 @@ import os
 
 from bs4 import BeautifulSoup
 from utils.utils import write_html, is_jvc_url, make_dirs
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from typing import List
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s: %(message)s')
 
+DEFAULT_TIMEOUT = 5 # seconds
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
+
 class PageDownloader():
+
+    def __init__(self, site):
+        self.site = site
+        self.http = requests.Session()
+        self.retries = Retry(
+            total=5,
+            status_forcelist=[429, 500, 502, 503, 504],
+            backoff_factor=1
+        )
+        self.adapter = TimeoutHTTPAdapter(max_retries=self.retries)
+        self.http.mount("https://", self.adapter)
+
 
     def download_topic_page(self, page_link: str, page_number: int = 1) -> BeautifulSoup:
         page_link_number = [m.span() for m in re.finditer(r"\d*\d", page_link)]
         page_link = page_link[:page_link_number[3][0]] + str(page_number) + page_link[page_link_number[3][1]:]
         logging.info(f"Going to page {page_link}")
-        page = requests.get(page_link)
-        response_code = page.status_code
+        page = self.http.get(page_link)
         soup = BeautifulSoup(page.content, features="lxml")
-        while response_code == 429:
-           logging.info("Being rate limited!")
-           random_delay = 5 * random.random()
-           logging.info(f"Waiting for {random_delay:.2f} seconds!")
-           time.sleep(random_delay)
-           page = requests.get(page_link)
-           response_code = page.status_code
-        if not soup:
-            logging.info("Error downloading page")
-            sys.exit()
-        logging.debug(f"Request status code is : {response_code}")
         return soup
 
 
     def download_img_page(self, page_link: str):
-        page = requests.get(page_link)
-        response_code = page.status_code
-        while response_code == 429:
-            logging.info("Being rate limited by Noelshack!")
-            random_delay = 5 * random.random()
-            logging.info(f"Waiting for {random_delay:.2f} seconds!")
-            time.sleep(random_delay)
-            page = requests.get(page_link)
-            response_code = page.status_code
+        page = self.http.get(page_link)
         soup = BeautifulSoup(page.content, features="lxml")
-        link = soup.select_one(sites_selectors.Noelshack.IMG_SELECTOR.value).attrs["src"]
-        return link
+        img_link = soup.select_one(Noelshack.IMG_SELECTOR.value).attrs["src"]
+        return img_link
 
 
 class RisitasInfo():
