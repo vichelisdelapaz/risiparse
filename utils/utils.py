@@ -16,32 +16,40 @@ def write_html(title:str, author: str, posts: List, output_dir: str, bulk: bool)
     ext = "html"
     i = 0
     full_title = f"{author_slug}-{title_slug}-{i}"
-    html_path = pathlib.Path(output_dir) / "risitas-html" / (full_title + f".{ext}")
+    html_path = (
+        pathlib.Path(output_dir) /
+        "risitas-html" /
+        (full_title + f".{ext}")
+    )
     while html_path.exists():
         i += 1
         full_title = f"{author_slug}-{title_slug}-{i}"
-        html_path = pathlib.Path(output_dir) / "risitas-html" / (full_title + f".{ext}")
+        html_path = (
+            pathlib.Path(output_dir) /
+            "risitas-html" /
+            (full_title + f".{ext}")
+        )
     with open(html_path, "w", encoding="utf-8") as f:
-        html = """
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Risitas</title>
-        </head>
-        <body>
-        """
+        html = (
+            """<!DOCTYPE html>
+            <html lang='fr'>
+            <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>Risitas</title>
+            </head>
+            <body>"""
+        )
         f.write(html)
         for x in posts:
             if bulk:
                 f.write(str(x))
             else:
                 f.write(str(x[0]))
-        html = """
-        </body>
-        </html>
-        """
+        html = (
+            """</body>
+            </html>"""
+        )
         f.write(html)
 
 
@@ -55,14 +63,22 @@ def _replace_whitespaces(title: str) -> str:
     return title_dashes
 
 
-def slugify(string: str, allow_unicode=False, title:bool = False) -> str:
+def slugify(
+        string: str,
+        allow_unicode=False,
+        title:bool = False
+) -> str:
     if title:
         string = _remove_risitas(string)
         string = _replace_whitespaces(string)
     if allow_unicode:
         string = unicodedata.normalize('NFKC', string)
     else:
-        string = unicodedata.normalize('NFKD', string).encode('ascii', 'ignore').decode('ascii')
+        string = unicodedata.normalize(
+            'NFKD', string
+        ).encode(
+            'ascii', 'ignore'
+        ).decode('ascii')
     string = re.sub(r'[^\w\s-]', '', string.lower())
     return re.sub(r'[-\s]+', '-', string).strip('-_')
 
@@ -79,8 +95,12 @@ def get_domain(url: str) -> str:
 
 
 def make_dirs(output_dir: str) -> None:
-    (pathlib.Path(output_dir) / "risitas-html").mkdir(exist_ok=True, parents=True)
-    (pathlib.Path(output_dir) / "risitas-pdf").mkdir(exist_ok=True, parents=True)
+    (
+        pathlib.Path(output_dir) / "risitas-html"
+    ).mkdir(exist_ok=True, parents=True)
+    (
+        pathlib.Path(output_dir) / "risitas-pdf"
+    ).mkdir(exist_ok=True, parents=True)
 
 
 def get_selectors_and_site(link: str):
@@ -120,18 +140,72 @@ def read_links(links_file: str) -> List:
 
 def get_args():
     parser = argparse.ArgumentParser()
-    default_links = str((pathlib.Path().cwd() / "risitas-links"))
-    # Optional argument flag which defaults to False
-    parser.add_argument("-b", "--bulk", action="store_true", default=False, help="Use this option if you want to download all the messages from the author. Default : False")
-    parser.add_argument("-p", "--create-pdf", action="store_true", default=True, help="Enable/Disable Pdf creation, Default : True")
-    parser.add_argument("--disable-html", action="store_true", default=False, help="Enable/Disable Html Download, Default : False")
-    parser.add_argument("-l","--links", action="store", default=default_links, help="The links file, Default : current dir/risitas-links")
+    default_links = str(
+        (pathlib.Path().cwd() / "risitas-links")
+    )
+    parser.add_argument(
+        "--all-messages",
+        action="store_true",
+        default=False,
+        help=(
+            "Use this option if you want to download"
+            "all the messages from the author. Default : False"
+        )
+    )
+    parser.add_argument(
+        "--no-pdf",
+        action="store_true",
+        default=False,
+        help="Disable Pdf creation, Default : False"
+    )
+    parser.add_argument(
+        "--no-download",
+        action="store_true",
+        default=False,
+        help="Disable Download, Default : False"
+    )
+    parser.add_argument(
+        "-l","--links",
+        action="store",
+        default=default_links,
+        help="The links file, Default : current dir/risitas-links"
+    )
     # Take a list of identifiers
-    parser.add_argument('-i','--identifiers', nargs='+', help="Give a list of words that are going to be matched by the script, example: a message that has the keyword 'hors-sujet', by adding 'hors-sujet' with this option, the script will match the message that has this keyword. Default : Chapitre" , required=False, default="chapitre")
+    parser.add_argument(
+        '-i',
+        '--identifiers',
+        nargs='+',
+        help=(
+            "Give a list of words that are going to be matched by the script,"
+            "example: a message that has the keyword 'hors-sujet',"
+            "by adding 'hors-sujet' with this option,"
+            "the script will match the message that has this keyword."
+            "Default : Chapitre"
+        ),
+        required=False,
+        default="chapitre"
+    )
     # Images
-    parser.add_argument('--no-resize-images', help="When the script 'thinks' that the post contains images and that they are chapters posted in screenshot, it will try to display them to their full width, Default : False" ,action="store_true", required=False, default=False)
+    parser.add_argument(
+        '--no-resize-images',
+        help=(
+            "When the script 'thinks' that the post contains images"
+            "and that they are chapters posted in screenshot,"
+            "it will try to display them to their full width"
+            "Default : False"
+        ),
+        action="store_true",
+        required=False,
+        default=False
+    )
     # Output dir
-    parser.add_argument('-o','--output-dir',action="store" , help="Output dir, Default is current dir" , default=str(pathlib.Path.cwd()))
+    parser.add_argument(
+        '-o',
+        '--output-dir',
+        action="store",
+        help="Output dir, Default is current dir",
+        default=str(pathlib.Path.cwd())
+    )
     args = parser.parse_args()
     return args
 
