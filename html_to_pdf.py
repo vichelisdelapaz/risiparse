@@ -30,7 +30,6 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
     def _fetchNext(self):
         try:
             self.current_file = next(self._htmls)
-            print(self.current_file.as_posix())
             self.load(QUrl.fromLocalFile(self.current_file.as_posix()))
         except StopIteration:
             return False
