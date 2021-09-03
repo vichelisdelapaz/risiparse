@@ -157,6 +157,12 @@ def get_args() -> argparse.Namespace:
         help="Default : False"
     )
     parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Verbose output, Default : False"
+    )
+    parser.add_argument(
         "--no-download",
         action="store_true",
         default=False,

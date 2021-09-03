@@ -19,6 +19,7 @@ from utils.utils import (
     get_args
 )
 from typing import List
+from colorama import Fore, Back, Style
 
 logging.basicConfig(
     level=logging.INFO,
@@ -67,7 +68,7 @@ class PageDownloader():
             + str(page_number) +
             page_link[page_link_number[3][1]:]
         )
-        logging.info(f"Going to page {page_link}")
+        logging.info(f"Going to page {Fore.GREEN}{page_link}{Style.RESET_ALL}")
         page = self.http.get(page_link)
         soup = BeautifulSoup(page.content, features="lxml")
         return soup
@@ -100,7 +101,7 @@ class RisitasInfo():
         author = soup.select_one(
             self.selectors.AUTHOR_SELECTOR.value
         ).text.strip()
-        logging.info(f"The risitas author is : {author}")
+        logging.info(f"The risitas author is : {Fore.YELLOW}{author}{Style.RESET_ALL}")
         return author
 
 
@@ -154,11 +155,11 @@ class Posts():
                 self.selectors.AUTHOR_SELECTOR.value
             ).text.strip()
         except AttributeError as e:
-            logging.info(f"Author deleted his account")
+            logging.debug(f"Author deleted his account")
             return False
         logging.debug(
-            f"The current author is {author}" +
-            "and the risitas author is {risitas_author}"
+            f"The current author is {Fore.BLUE}{author}{Style.RESET_ALL} " +
+            f"and the risitas author is {Fore.BLUE}{risitas_author}{Style.RESET_ALL}"
         )
         return True if author == risitas_author else False
 
@@ -290,7 +291,7 @@ class Posts():
                 continue
             contains_image = self._check_chapter_image(risitas_html)
             if contains_image:
-                logging.info(f"The current post contains images!")
+                logging.debug(f"The current post contains images!")
                 if not self.no_resize_images:
                     risitas_html = self._get_fullscale_image(risitas_html)
             if self.all_messages:
@@ -320,9 +321,9 @@ class Posts():
                     'p'
                 ).text[0:50].strip().replace("\n", "")
                 if not pretty_print:
-                    logging.info("Added some images, maybe chapters in screenshot?")
+                    logging.debug("Added some images, maybe chapters in screenshot?")
                 else:
-                    logging.info(f"Added {pretty_print}")
+                    logging.info(f"Added {Fore.BLUE}{pretty_print}{Style.RESET_ALL}")
             except AttributeError as e:
                 logging.exception(
                     "Can't log text because this is an image from jvarchive"
@@ -336,6 +337,8 @@ def main(args: argparse.Namespace) ->  None:
     make_dirs(args.output_dir)
     all_messages = args.all_messages
     page_links = read_links(args.links)
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     if not args.no_download:
         for link in page_links:
             selectors, site = get_selectors_and_site(link)
@@ -357,12 +360,12 @@ def main(args: argparse.Namespace) ->  None:
                 posts.get_posts(soup, risitas_info.author,args. identifiers)
                 page_number += 1
             logging.info(
-                f"The number of post downloaded for {risitas_info.title} "
+                f"The number of posts downloaded for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "
                 f"is : {posts.count}"
             )
             if not all_messages:
                 logging.info(
-                    f"The number of duplicates for {risitas_info.title} "
+                    f"The number of duplicates for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "
                     f"is : {posts.duplicates}"
                 )
             write_html(

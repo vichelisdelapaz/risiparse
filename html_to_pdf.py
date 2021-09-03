@@ -3,9 +3,11 @@
 import os
 import pathlib
 import logging
+
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5 import QtWidgets, QtWebEngineWidgets
+from colorama import Fore, Back, Style
 
 class PdfPage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, output_dir):
@@ -39,7 +41,7 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
         output_file = str(self.pdf_folder_path) + os.sep + pdf_file
         output_file_path = pathlib.Path(output_file)
         self.printToPdf(output_file, pageLayout=self.layout)
-        logging.info(f"Creating {output_file}")
+        logging.info(f"Creating {Fore.MAGENTA}{output_file}{Style.RESET_ALL}")
 
     def _handlePrintingFinished(self):
         if not self._fetchNext():
