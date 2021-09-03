@@ -179,7 +179,7 @@ def get_args():
             "Give a list of words that are going to be matched by the script,"
             "example: a message that has the keyword 'hors-sujet',"
             "by adding 'hors-sujet' with this option,"
-            "the script will match the message that has this keyword."
+            "the script will match the message that has this keyword. "
             "Default : chapitre"
         ),
         required=False,
@@ -191,7 +191,7 @@ def get_args():
         help=(
             "When the script 'thinks' that the post contains images"
             "and that they are chapters posted in screenshot,"
-            "it will try to display them to their full width"
+            "it will try to display them to their full width "
             "Default : False"
         ),
         action="store_true",
