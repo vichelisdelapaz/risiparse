@@ -21,14 +21,5 @@ class Jvarchive(Enum):
     NOELSHACK_IMG_SELECTOR = "img"
 
 
-class Deuxsucres(Enum):
-    AUTHOR_SELECTOR = ".pseudo"
-    TOTAL_SELECTOR = ".pagination > li:nth-last-of-type(2)"
-    MESSAGE_SELECTOR = "[class='row content-message']"
-    RISITAS_TEXT_SELECTOR = "[class='row content-message']"
-    TITLE_SELECTOR = ".topic-title"
-    NOELSHACK_IMG_SELECTOR = "img"
-
-
 class Noelshack(Enum):
     IMG_SELECTOR = "#elt_to_aff"

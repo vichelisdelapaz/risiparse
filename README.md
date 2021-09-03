@@ -2,6 +2,10 @@
 
 Un script qui permet de télécharger les risitas en html et de les convertir en pdf.
 
+Sites supportés : Jeuxvideo.com, Jvarchive.com
+
+2sucres ne marche pas car javascript, faut sortir selenium dans ce cas-là
+
 Testé sous arch linux.
 
 ## Installation

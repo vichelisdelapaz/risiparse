@@ -3,6 +3,7 @@
 import logging
 import requests
 import re
+import argparse
 
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
@@ -331,7 +332,7 @@ class Posts():
             self.count += 1
 
 
-def main(args) ->  None:
+def main(args: argparse.Namespace) ->  None:
     make_dirs(args.output_dir)
     all_messages = args.all_messages
     page_links = read_links(args.links)
