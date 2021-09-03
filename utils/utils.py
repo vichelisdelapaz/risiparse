@@ -131,14 +131,12 @@ def create_pdfs(output_dir: str):
 
 
 def read_links(links_file: str) -> List:
-    page_links = []
     with open(links_file) as f:
-        for link in f:
-            page_links.append(link.strip())
+        page_links = [line.strip() for line in f if line.strip() != '']
     return page_links
 
 
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     default_links = str(
         (pathlib.Path().cwd() / "risitas-links")
