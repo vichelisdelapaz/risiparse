@@ -3,7 +3,6 @@
 import logging
 import requests
 import re
-import pathlib
 
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
