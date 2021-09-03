@@ -3,8 +3,6 @@
 import logging
 import requests
 import re
-import time
-import random
 import pathlib
 
 from bs4 import BeautifulSoup
