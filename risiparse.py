@@ -293,9 +293,12 @@ class Posts():
                     logging.exception(f"This is a jvc smiley! {e}")
         if self.site == "jvc":
             for img in imgs:
-                img.attrs["src"] = self.downloader.download_img_page(
-                    img.attrs["alt"]
-                )
+                if re.search("fichiers", img.attrs["alt"]):
+                    img.attrs["src"] = img.attrs["alt"]
+                else:
+                    img.attrs["src"] = self.downloader.download_img_page(
+                        img.attrs["alt"]
+                    )
         else:
             for img in imgs:
                 img.attrs["src"] = img.attrs["alt"]
