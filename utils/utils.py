@@ -8,9 +8,16 @@ import argparse
 import logging
 import html_to_pdf
 import sites_selectors
+
 from typing import List
 
-def write_html(title:str, author: str, posts: List, output_dir: str, bulk: bool) -> None:
+def write_html(
+        title:str,
+        author: str,
+        posts: List,
+        output_dir: str,
+        all_messages: bool
+) -> None:
     title_slug = slugify(title, title=True)
     author_slug = slugify(author, title=False)
     ext = "html"
@@ -42,7 +49,7 @@ def write_html(title:str, author: str, posts: List, output_dir: str, bulk: bool)
         )
         f.write(html)
         for x in posts:
-            if bulk:
+            if all_messages:
                 f.write(str(x))
             else:
                 f.write(str(x[0]))
@@ -103,7 +110,7 @@ def make_dirs(output_dir: str) -> None:
     ).mkdir(exist_ok=True, parents=True)
 
 
-def get_selectors_and_site(link: str):
+def get_selectors_and_site(link: str) -> None:
     domain = get_domain(link)
     selectors = ""
     site = ""
@@ -119,9 +126,9 @@ def get_selectors_and_site(link: str):
     return selectors, site
 
 
-def create_pdfs(output_dir: str):
+def create_pdfs(output_dir: str) -> None:
     html_folder_path = pathlib.Path(output_dir) / "risitas-html"
-    htmls = list(html_folder_path.glob("*"))
+    htmls = list(html_folder_path.glob("*.html"))
     if htmls:
         app = html_to_pdf.QtWidgets.QApplication([])
         page = html_to_pdf.PdfPage(output_dir)
@@ -196,6 +203,17 @@ def get_args() -> argparse.Namespace:
             "When the script 'thinks' that the post contains images"
             "and that they are chapters posted in screenshot,"
             "it will try to display them to their full width "
+            "Default : False"
+        ),
+        action="store_true",
+        required=False,
+        default=False
+    )
+    parser.add_argument(
+        '--download-images',
+        help=(
+            "Whether to download images locally"
+            "If set, this will change all img[src] link to point to the local images"
             "Default : False"
         ),
         action="store_true",

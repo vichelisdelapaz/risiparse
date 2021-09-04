@@ -4,6 +4,7 @@ import logging
 import requests
 import re
 import argparse
+import pathlib
 
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
@@ -81,6 +82,35 @@ class PageDownloader():
             Noelshack.IMG_SELECTOR.value
         ).attrs["src"]
         return img_link
+
+
+    def _change_src_path(self, img: str, folder: str, file_name:str) -> None:
+        img.attrs["src"] = folder + "/" + file_name
+
+
+    def _image_exists(self, file_name: str, img_folder: pathlib.Path) -> bool:
+        img_path = img_folder / file_name
+        if img_path.exists():
+            return True
+        else:
+            return False
+
+
+    def download_images(self, soup: BeautifulSoup) -> None:
+        img_folder_path = pathlib.Path.cwd() / "risitas-html" / "images"
+        img_folder_path.mkdir(exist_ok=True)
+        for x in soup:
+            imgs = x[0].select("img")
+            for img in imgs:
+                link = img.attrs["src"]
+                file_name = link[link.rfind("/"):][1:]
+                if not self._image_exists(file_name, img_folder_path):
+                    logging.info("Image not in cache, downloading...")
+                    image = self.http.get(img.attrs["src"])
+                    file_name = image.url[image.url.rfind("/"):][1:]
+                    img_file_path = img_folder_path / file_name
+                    img_file_path.write_bytes(image.content)
+                self._change_src_path(img, img_folder_path.name, file_name)
 
 
 class RisitasInfo():
@@ -309,7 +339,7 @@ class Posts():
                 logging.info(
                     (
                         "The current post "
-                        f"{risitas_html.select_one('p').text[0:50].strip()} "
+                        f"{Fore.RED}{risitas_html.select_one('p').text[0:50].strip()}{Style.RESET_ALL} "
                         "is a duplicate!"
                     )
                 )
@@ -336,6 +366,7 @@ class Posts():
 def main(args: argparse.Namespace) ->  None:
     make_dirs(args.output_dir)
     all_messages = args.all_messages
+    download_images = args.download_images
     page_links = read_links(args.links)
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -368,6 +399,8 @@ def main(args: argparse.Namespace) ->  None:
                     f"The number of duplicates for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "
                     f"is : {posts.duplicates}"
                 )
+            if download_images:
+                page_downloader.download_images(posts.risitas_html)
             write_html(
                 risitas_info.title,
                 risitas_info.author,
