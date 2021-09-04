@@ -21,7 +21,7 @@ pip3 install -r requirements.txt
 ```
 kenny $ python3 risiparse.py -h
 usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [-l LINKS]
-                    [-i IDENTIFIERS [IDENTIFIERS ...]] [--no-resize-images] [-o OUTPUT_DIR]
+                    [-i IDENTIFIERS [IDENTIFIERS ...]] [--no-resize-images] [--download-images] [-o OUTPUT_DIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -32,13 +32,13 @@ optional arguments:
   -l LINKS, --links LINKS
                         The links file, Default : current dir/risitas-links
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script,example: a
-                        message that has the keyword 'hors-sujet',by adding 'hors-sujet' with this
-                        option,the script will match the message that has this keyword. Default :
-                        chapitre
-  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are
-                        chapters posted in screenshot,it will try to display them to their full width
-                        Default : False
+                        Give a list of words that are going to be matched by the script,example: a message that
+                        has the keyword 'hors-sujet',by adding 'hors-sujet' with this option,the script will
+                        match the message that has this keyword. Default : chapitre
+  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted
+                        in screenshot,it will try to display them to their full width Default : False
+  --download-images     Whether to download images locallyIf set, this will change all img[src] link to point to
+                        the local imagesDefault : False
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         Output dir, Default is current dir
 ```
@@ -77,5 +77,12 @@ Télécharger les messages contenant les mots clés suivants,
 peut aussi inclure un regexp. Voir les regexp de python
 
 ```
-python3 risiparsE.py -i chapitre partie
+python3 risiparse.py -i chapitre partie
+```
+
+Télécharger les images localement et les utiliser dans l'html, utile dans le future
+si j'ai le temps de développer un GUI
+
+```
+python3 risiparse.py --download-images
 ```
