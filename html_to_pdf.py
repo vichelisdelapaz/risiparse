@@ -24,9 +24,11 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
         self.loadFinished.connect(self._handleLoadFinished)
         self.pdfPrintingFinished.connect(self._handlePrintingFinished)
 
+
     def convert(self, htmls):
         self._htmls = iter(htmls)
         self._fetchNext()
+
 
     def _fetchNext(self):
         try:
@@ -36,12 +38,14 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
             return False
         return True
 
+
     def _handleLoadFinished(self):
         pdf_file = self.current_file.name[:-5] + ".pdf"
         output_file = str(self.pdf_folder_path) + os.sep + pdf_file
         output_file_path = pathlib.Path(output_file)
         self.printToPdf(output_file, pageLayout=self.layout)
         logging.info(f"Creating {Fore.MAGENTA}{output_file}{Style.RESET_ALL}")
+
 
     def _handlePrintingFinished(self):
         if not self._fetchNext():
