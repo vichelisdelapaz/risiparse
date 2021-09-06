@@ -16,7 +16,6 @@ def write_html(
         author: str,
         posts: List,
         output_dir: str,
-        all_messages: bool
 ) -> None:
     title_slug = slugify(title, title=True)
     author_slug = slugify(author, title=False)
@@ -49,10 +48,7 @@ def write_html(
         )
         f.write(html)
         for x in posts:
-            if all_messages:
-                f.write(str(x))
-            else:
-                f.write(str(x[0]))
+            f.write(str(x[0]))
         html = (
             """</body>
             </html>"""

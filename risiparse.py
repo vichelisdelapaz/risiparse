@@ -84,8 +84,8 @@ class PageDownloader():
         return img_link
 
 
-    def _change_src_path(self, img: str, folder: str, file_name:str) -> None:
-        img.attrs["src"] = folder + "/" + file_name
+    def _change_src_path(self, img:str, img_folder_path: pathlib.Path, file_name: str) -> None:
+        img.attrs["src"] = str(img_folder_path) + "/" + file_name
 
 
     def _image_exists(self, file_name: str, img_folder: pathlib.Path) -> bool:
@@ -110,7 +110,7 @@ class PageDownloader():
                     file_name = image.url[image.url.rfind("/"):][1:]
                     img_file_path = img_folder_path / file_name
                     img_file_path.write_bytes(image.content)
-                self._change_src_path(img, img_folder_path.name, file_name)
+                self._change_src_path(img, img_folder_path, file_name)
 
 
 class RisitasInfo():
@@ -329,7 +329,7 @@ class Posts():
                     risitas_html = self._get_fullscale_image(risitas_html)
             if self.all_messages:
                 self.count += 1
-                self.risitas_html.append(risitas_html)
+                self.risitas_html.append((risitas_html, ))
                 continue
             contains_identifiers = self._check_post_identifiers(post, identifiers)
             is_short = self._check_post_length(post)
@@ -409,7 +409,6 @@ def main(args: argparse.Namespace) ->  None:
                 risitas_info.author,
                 posts.risitas_html,
                 args.output_dir,
-                args.all_messages
             )
     if not args.no_pdf:
         create_pdfs(args.output_dir)
