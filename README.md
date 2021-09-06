@@ -16,6 +16,10 @@ cd risiparse
 pip3 install -r requirements.txt
 ```
 
+## Comment avoir un risitas sans message manquant ni message hors-sujet ?
+
+Voir https://github.com/vichelisdelapaz/risicompare
+
 ## Utilisation
 
 ```
