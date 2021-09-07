@@ -9,8 +9,8 @@ import pathlib
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from sites_selectors import Noelshack
-from utils.utils import (
+from risiparse.sites_selectors import Noelshack
+from risiparse.utils.utils import (
     write_html,
     get_domain,
     make_dirs,
@@ -373,7 +373,8 @@ class Posts():
             self.count += 1
 
 
-def main(args: argparse.Namespace) ->  None:
+def main() ->  None:
+    args = get_args()
     make_dirs(args.output_dir)
     all_messages = args.all_messages
     download_images = args.download_images
@@ -423,5 +424,4 @@ def main(args: argparse.Namespace) ->  None:
 
 
 if __name__ == "__main__":
-    args = get_args()
-    main(args)
+    main()

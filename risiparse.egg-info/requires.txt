@@ -1,0 +1,6 @@
+requests
+BeautifulSoup4
+PyQt5
+PyQtWebEngine
+lxml
+colorama

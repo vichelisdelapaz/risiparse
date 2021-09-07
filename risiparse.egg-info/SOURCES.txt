@@ -1,0 +1,16 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+risiparse/__init__.py
+risiparse/html_to_pdf.py
+risiparse/risiparse.py
+risiparse/sites_selectors.py
+risiparse.egg-info/PKG-INFO
+risiparse.egg-info/SOURCES.txt
+risiparse.egg-info/dependency_links.txt
+risiparse.egg-info/entry_points.txt
+risiparse.egg-info/requires.txt
+risiparse.egg-info/top_level.txt
+risiparse/utils/__init__.py
+risiparse/utils/utils.py

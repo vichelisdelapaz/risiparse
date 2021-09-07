@@ -6,8 +6,7 @@ import re
 import sys
 import argparse
 import logging
-import html_to_pdf
-import sites_selectors
+from risiparse import html_to_pdf, sites_selectors
 
 from typing import List
 

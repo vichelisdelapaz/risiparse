@@ -1,0 +1,3 @@
+[console_scripts]
+risiparse = risiparse.risiparse:main
+
