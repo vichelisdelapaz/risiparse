@@ -249,6 +249,10 @@ class Posts():
         return ret_val
 
 
+    def _contains_blockquote(self, risitas_html: BeautifulSoup) -> bool:
+        return True if risitas_html.select("blockquote") else False
+
+
     def _check_chapter_image(self, soup: BeautifulSoup) -> bool:
         ret_val = False
         paragraphs = soup.select("p")
@@ -333,7 +337,10 @@ class Posts():
                 continue
             contains_identifiers = self._check_post_identifiers(post, identifiers)
             is_short = self._check_post_length(post)
-            if not contains_identifiers and self.count > 1 and not contains_image:
+            contains_blockquote = self._contains_blockquote(risitas_html)
+            if contains_blockquote:
+                continue
+            if not contains_identifiers and self.count > 1 and not contains_image and is_short:
                 continue
             if is_short and not contains_image:
                 continue
@@ -371,6 +378,7 @@ def main(args: argparse.Namespace) ->  None:
     all_messages = args.all_messages
     download_images = args.download_images
     page_links = read_links(args.links)
+    identifiers = args.identifiers
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     if not args.no_download:
@@ -391,7 +399,7 @@ def main(args: argparse.Namespace) ->  None:
                 soup = page_downloader.download_topic_page(
                     link, page_number
                 )
-                posts.get_posts(soup, risitas_info.author,args. identifiers)
+                posts.get_posts(soup, risitas_info.author,identifiers)
                 page_number += 1
             logging.info(
                 f"The number of posts downloaded for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "
