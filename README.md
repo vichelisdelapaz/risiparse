@@ -25,19 +25,19 @@ usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [
 
 optional arguments:
   -h, --help            show this help message and exit
-  --all-messages        Download all the messages from the author.Default : False
+  --all-messages        Download all the messages from the author. Default : False
   --no-pdf              Default : False
   --debug               Verbose output, Default : False
   --no-download         Default : False
   -l LINKS [LINKS ...], --links LINKS [LINKS ...]
-                        The links file, Default : current dir/risitas-links
+                        The links file, or links from standard input. Default : current dir/risitas-links
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script,example: a message that has the keyword 'hors-sujet',by adding 'hors-sujet' with this option,the
+                        Give a list of words that are going to be matched by the script, example: a message that has the keyword 'hors-sujet', by adding 'hors-sujet' with this option,the
                         script will match the message that has this keyword. Default : chapitre
   --authors AUTHORS [AUTHORS ...]
                         List of authors to be matched, by default the author of the first post author is considered as the author throughout the whole risitas Default : Empty
-  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot,it will try to display them to their full width Default : False
-  --download-images     Whether to download images locallyIf set, this will change all img[src] link to point to the local imagesDefault : False
+  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot, it will try to display them to their full width Default : False
+  --download-images     Whether to download images locally. If set, this will change all img[src] link to point to the local images Default : False
   --no-match-author     If the name of the author is pogo and the message contains pogo111, it will be downloaded automatically, this disables this feature Default : False
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         Output dir, Default is current dir
@@ -71,7 +71,7 @@ risiparse  --no-download -o <foo>
 Télécharger uniquement les risitas en html, à partir d'un fichier contenant des liens vers les risitas
 
 ```
-risiparse  --no-pdf -l <links-file>
+risiparse  --no-pdf -l <links-file> or <link1> <link2> ... <linkn>
 ```
 
 Télécharger les risitas sans agrandir les images qui pourraient être des chapitres.

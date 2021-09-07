@@ -173,7 +173,7 @@ def get_args() -> argparse.Namespace:
         action="store",
         nargs='+',
         default=default_links,
-        help="The links file, Default : current dir/risitas-links"
+        help="The links file, or links from standard input, Default : current dir/risitas-links"
     )
     # Take a list of identifiers
     parser.add_argument(
@@ -181,9 +181,9 @@ def get_args() -> argparse.Namespace:
         '--identifiers',
         nargs='+',
         help=(
-            "Give a list of words that are going to be matched by the script,"
-            "example: a message that has the keyword 'hors-sujet',"
-            "by adding 'hors-sujet' with this option,"
+            "Give a list of words that are going to be matched by the script, "
+            "example: a message that has the keyword 'hors-sujet', "
+            "by adding 'hors-sujet' with this option, "
             "the script will match the message that has this keyword. "
             "Default : chapitre"
         ),
@@ -208,8 +208,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         '--no-resize-images',
         help=(
-            "When the script 'thinks' that the post contains images"
-            "and that they are chapters posted in screenshot,"
+            "When the script 'thinks' that the post contains images "
+            "and that they are chapters posted in screenshot, "
             "it will try to display them to their full width "
             "Default : False"
         ),
@@ -220,8 +220,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         '--download-images',
         help=(
-            "Whether to download images locally"
-            "If set, this will change all img[src] link to point to the local images"
+            "Whether to download images locally "
+            "If set, this will change all img[src] link to point to the local images "
             "Default : False"
         ),
         action="store_true",
