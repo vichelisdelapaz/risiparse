@@ -171,12 +171,13 @@ class Posts():
         self.downloader = downloader
         self.site = site
         self.no_resize_images = no_resize_images
+        self.authors = []
 
 
     def _check_post_author(
             self,
             post: BeautifulSoup,
-            risitas_author: str
+            authors: List
     ) -> bool:
         # This is needed cuz deleted accounts are not handled
         # the same way for whatever reason...
@@ -189,9 +190,12 @@ class Posts():
             return False
         logging.debug(
             f"The current author is {Fore.BLUE}{author}{Style.RESET_ALL} " +
-            f"and the risitas author is {Fore.BLUE}{risitas_author}{Style.RESET_ALL}"
+            f"and the risitas author is {Fore.BLUE}{authors}{Style.RESET_ALL}"
         )
-        return True if author == risitas_author else False
+        for author in authors:
+            if re.match(self.authors[0], author):
+                return True
+        return True if author in authors else False
 
 
     def _check_post_length(self, post: BeautifulSoup) -> bool:
@@ -312,7 +316,7 @@ class Posts():
     def get_posts(
             self,
             soup: BeautifulSoup,
-            risitas_author: str,
+            risitas_authors: List,
             identifiers: List
     ) -> None:
         posts = soup.select(self.selectors.MESSAGE_SELECTOR.value)
@@ -320,7 +324,9 @@ class Posts():
         # This post usually have no identifiers and is used
         # as an intro
         for post in posts:
-            is_author = self._check_post_author(post, risitas_author)
+            if not self.authors:
+                self.authors = risitas_authors
+            is_author = self._check_post_author(post, risitas_authors)
             risitas_html = post.select_one(
                 self.selectors.RISITAS_TEXT_SELECTOR.value
             )
@@ -389,6 +395,7 @@ def main() ->  None:
             page_downloader = PageDownloader(site)
             soup = page_downloader.download_topic_page(link)
             risitas_info = RisitasInfo(soup, selectors)
+            authors = [risitas_info.author] + args.authors
             posts = Posts(
                 selectors,
                 page_downloader,
@@ -400,7 +407,7 @@ def main() ->  None:
                 soup = page_downloader.download_topic_page(
                     link, page_number
                 )
-                posts.get_posts(soup, risitas_info.author,identifiers)
+                posts.get_posts(soup, authors,identifiers)
                 page_number += 1
             logging.info(
                 f"The number of posts downloaded for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "

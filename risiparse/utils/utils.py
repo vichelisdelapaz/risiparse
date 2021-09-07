@@ -192,6 +192,19 @@ def get_args() -> argparse.Namespace:
         default=["chapitre"],
         type=str
     )
+    # Authors if author has multiple accounts
+    parser.add_argument(
+        '--authors',
+        nargs='+',
+        help=(
+            "List of authors to be matched, by default the author of "
+            "the first post author is considered as the author throughout the whole risitas "
+            "Default : Empty"
+        ),
+        required=False,
+        default=[],
+        type=str
+    )
     # Images
     parser.add_argument(
         '--no-resize-images',
@@ -222,7 +235,7 @@ def get_args() -> argparse.Namespace:
         '--output-dir',
         action="store",
         help="Output dir, Default is current dir",
-        default=str(pathlib.Path.cwd())
+        default=str(pathlib.Path.home())
     )
     args = parser.parse_args()
     return args
