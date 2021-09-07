@@ -132,7 +132,7 @@ def create_pdfs(output_dir: str) -> None:
         sys.exit(app.exec_())
 
 
-def read_links(links_file: str) -> List:
+def read_links(links_file: pathlib.Path) -> List:
     with open(links_file) as f:
         page_links = [line.strip() for line in f if line.strip() != '']
     return page_links
@@ -140,9 +140,7 @@ def read_links(links_file: str) -> List:
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    default_links = str(
-        (pathlib.Path().cwd() / "risitas-links")
-    )
+    default_links = pathlib.Path().cwd() / "risitas-links"
     parser.add_argument(
         "--all-messages",
         action="store_true",
@@ -173,6 +171,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         "-l","--links",
         action="store",
+        nargs='+',
         default=default_links,
         help="The links file, Default : current dir/risitas-links"
     )

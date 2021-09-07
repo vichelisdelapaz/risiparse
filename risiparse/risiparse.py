@@ -384,7 +384,10 @@ def main() ->  None:
     make_dirs(args.output_dir)
     all_messages = args.all_messages
     download_images = args.download_images
-    page_links = read_links(args.links)
+    if isinstance(args.links, pathlib.Path):
+        page_links = read_links(args.links)
+    else:
+        page_links = args.links
     identifiers = args.identifiers
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
