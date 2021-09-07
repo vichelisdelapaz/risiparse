@@ -190,7 +190,8 @@ def get_args() -> argparse.Namespace:
             "Default : chapitre"
         ),
         required=False,
-        default="chapitre"
+        default=["chapitre"],
+        type=str
     )
     # Images
     parser.add_argument(
