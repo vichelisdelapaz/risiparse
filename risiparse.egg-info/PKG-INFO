@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: risiparse
-Version: 1.0.2
+Version: 1.0.3
 Summary: A script to download risitas
 Home-page: https://github.com/vichelisdelapaz/risiparse
 Author: Vichelis
@@ -44,19 +44,19 @@ usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [
 
 optional arguments:
   -h, --help            show this help message and exit
-  --all-messages        Download all the messages from the author.Default : False
+  --all-messages        Download all the messages from the author. Default : False
   --no-pdf              Default : False
   --debug               Verbose output, Default : False
   --no-download         Default : False
   -l LINKS [LINKS ...], --links LINKS [LINKS ...]
-                        The links file, Default : current dir/risitas-links
+                        The links file, or links from standard input. Default : current dir/risitas-links
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script,example: a message that has the keyword 'hors-sujet',by adding 'hors-sujet' with this option,the
+                        Give a list of words that are going to be matched by the script, example: a message that has the keyword 'hors-sujet', by adding 'hors-sujet' with this option,the
                         script will match the message that has this keyword. Default : chapitre
   --authors AUTHORS [AUTHORS ...]
                         List of authors to be matched, by default the author of the first post author is considered as the author throughout the whole risitas Default : Empty
-  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot,it will try to display them to their full width Default : False
-  --download-images     Whether to download images locallyIf set, this will change all img[src] link to point to the local imagesDefault : False
+  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot, it will try to display them to their full width Default : False
+  --download-images     Whether to download images locally. If set, this will change all img[src] link to point to the local images Default : False
   --no-match-author     If the name of the author is pogo and the message contains pogo111, it will be downloaded automatically, this disables this feature Default : False
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         Output dir, Default is current dir
@@ -65,6 +65,11 @@ optional arguments:
 Télécharger les risitas à partir de répertoire courant/risitas-links, dans rep courant/risitas-html puis convertir dans rep courant/risitas-pdf, les images susceptibles d'être des chapitres seront agrandis.
 
 Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les messages dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
+
+En l'état actuel le script ne copie pas les messages au fur et à mesure, c'est à dire que si vous relancez le téléchargement d'un même risitas
+il va retélécharger tous les messages et faire le tri.
+Et si par exemple un message a été 410 entre 2 téléchargements, il faudrait juste copier l'html du message manquant à la main dans le
+fichier html que vous venez de télécharger.
 
 ```
 risiparse
@@ -85,7 +90,7 @@ risiparse  --no-download -o <foo>
 Télécharger uniquement les risitas en html, à partir d'un fichier contenant des liens vers les risitas
 
 ```
-risiparse  --no-pdf -l <links-file>
+risiparse  --no-pdf -l <links-file> or <link1> <link2> ... <linkn>
 ```
 
 Télécharger les risitas sans agrandir les images qui pourraient être des chapitres.
