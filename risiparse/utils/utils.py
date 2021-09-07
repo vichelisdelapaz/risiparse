@@ -228,6 +228,17 @@ def get_args() -> argparse.Namespace:
         required=False,
         default=False
     )
+    # Match author
+    parser.add_argument(
+        "--no-match-author",
+        action="store_true",
+        default=False,
+        help=(
+            "If the name of the author is pogo and the message contains pogo111, it will be downloaded "
+            "automatically, this disables this feature "
+            "Default : False"
+        )
+    )
     # Output dir
     parser.add_argument(
         '-o',

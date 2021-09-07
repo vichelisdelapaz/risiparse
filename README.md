@@ -20,8 +20,8 @@ Voir https://github.com/vichelisdelapaz/risicompare
 
 ```
 kenny $ risiparse -h
-usage: risiparse [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [-l LINKS] [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]] [--no-resize-images]
-                 [--download-images] [-o OUTPUT_DIR]
+usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [-l LINKS [LINKS ...]] [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
+                    [--no-resize-images] [--download-images] [--no-match-author] [-o OUTPUT_DIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -29,15 +29,16 @@ optional arguments:
   --no-pdf              Default : False
   --debug               Verbose output, Default : False
   --no-download         Default : False
-  -l LINKS, --links LINKS
+  -l LINKS [LINKS ...], --links LINKS [LINKS ...]
                         The links file, Default : current dir/risitas-links
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
                         Give a list of words that are going to be matched by the script,example: a message that has the keyword 'hors-sujet',by adding 'hors-sujet' with this option,the
                         script will match the message that has this keyword. Default : chapitre
   --authors AUTHORS [AUTHORS ...]
-                        List of authors to be matched, by default the author of the first post author is considered as the author throughout the whole risitas, Default : Empty
+                        List of authors to be matched, by default the author of the first post author is considered as the author throughout the whole risitas Default : Empty
   --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot,it will try to display them to their full width Default : False
   --download-images     Whether to download images locallyIf set, this will change all img[src] link to point to the local imagesDefault : False
+  --no-match-author     If the name of the author is pogo and the message contains pogo111, it will be downloaded automatically, this disables this feature Default : False
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         Output dir, Default is current dir
 ```

@@ -177,25 +177,26 @@ class Posts():
     def _check_post_author(
             self,
             post: BeautifulSoup,
-            authors: List
+            no_match_author: bool,
     ) -> bool:
         # This is needed cuz deleted accounts are not handled
         # the same way for whatever reason...
         try:
-            author = post.select_one(
+            post_author = post.select_one(
                 self.selectors.AUTHOR_SELECTOR.value
             ).text.strip()
         except AttributeError as e:
             logging.debug(f"Author deleted his account")
             return False
         logging.debug(
-            f"The current author is {Fore.BLUE}{author}{Style.RESET_ALL} " +
-            f"and the risitas author is {Fore.BLUE}{authors}{Style.RESET_ALL}"
+            f"The current author is {Fore.BLUE}{post_author}{Style.RESET_ALL} " +
+            f"and the risitas author is {Fore.BLUE}{self.authors}{Style.RESET_ALL}"
         )
-        for author in authors:
-            if re.match(self.authors[0], author):
-                return True
-        return True if author in authors else False
+        if not no_match_author:
+            for author in self.authors:
+                if re.match(author, post_author):
+                    return True
+        return True if post_author in self.authors else False
 
 
     def _check_post_length(self, post: BeautifulSoup) -> bool:
@@ -317,16 +318,17 @@ class Posts():
             self,
             soup: BeautifulSoup,
             risitas_authors: List,
-            identifiers: List
+            identifiers: List,
+            no_match_author: bool,
     ) -> None:
         posts = soup.select(self.selectors.MESSAGE_SELECTOR.value)
         # Counter necessary to keep the first post in risitas
         # This post usually have no identifiers and is used
         # as an intro
+        if not self.authors:
+            self.authors = risitas_authors
         for post in posts:
-            if not self.authors:
-                self.authors = risitas_authors
-            is_author = self._check_post_author(post, risitas_authors)
+            is_author = self._check_post_author(post, no_match_author)
             risitas_html = post.select_one(
                 self.selectors.RISITAS_TEXT_SELECTOR.value
             )
@@ -391,6 +393,7 @@ def main() ->  None:
     identifiers = args.identifiers
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
+    no_match_author = args.no_match_author
     if not args.no_download:
         for link in page_links:
             selectors, site = get_selectors_and_site(link)
@@ -410,7 +413,7 @@ def main() ->  None:
                 soup = page_downloader.download_topic_page(
                     link, page_number
                 )
-                posts.get_posts(soup, authors,identifiers)
+                posts.get_posts(soup, authors, identifiers, no_match_author)
                 page_number += 1
             logging.info(
                 f"The number of posts downloaded for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "
