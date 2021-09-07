@@ -81,7 +81,7 @@ Télécharger les messages contenant les mots clés suivants,
 peut aussi inclure un regexp. Voir les regexp de python
 
 ```
-python3 risiparse.py -i chapitre partie
+python3 risiparse.py -i "chapitre" "partie" "chapitre \d"
 ```
 
 Télécharger les images localement et les utiliser dans l'html, utile dans le future
