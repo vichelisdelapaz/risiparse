@@ -47,6 +47,11 @@ Télécharger les risitas à partir de répertoire courant/risitas-links, dans r
 
 Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les messages dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
 
+En l'état actuel le script ne copie pas les messages au fur et à mesure, c'est à dire que si vous relancez le téléchargement d'un même risitas
+il va retélécharger tous les messages et faire le tri.
+Et si par exemple un message a été 410 entre 2 téléchargements, il faudrait juste copier l'html du message manquant à la main dans le
+fichier html que vous venez de télécharger.
+
 ```
 risiparse
 ```
