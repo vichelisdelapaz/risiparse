@@ -386,15 +386,15 @@ def main() ->  None:
     make_dirs(args.output_dir)
     all_messages = args.all_messages
     download_images = args.download_images
-    if isinstance(args.links, pathlib.Path):
-        page_links = read_links(args.links)
-    else:
-        page_links = args.links
     identifiers = args.identifiers
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     no_match_author = args.no_match_author
     if not args.no_download:
+        if isinstance(args.links, pathlib.Path):
+            page_links = read_links(args.links)
+        else:
+            page_links = args.links
         for link in page_links:
             selectors, site = get_selectors_and_site(link)
             page_number: int = 1
