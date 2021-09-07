@@ -4,3 +4,6 @@
 /risitas-html/
 /links
 /dist/
+/build/
+/risiparse.spec
+/.pypirc

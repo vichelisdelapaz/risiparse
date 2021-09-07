@@ -25,14 +25,10 @@ Sites supportés : Jeuxvideo.com, Jvarchive.com
 
 2sucres ne marche pas car javascript, faut sortir selenium dans ce cas-là
 
-Testé sous arch linux.
-
 ## Installation
 
 ```
-git clone https://github.com/vichelisdelapaz/risiparse
-cd risiparse
-pip3 install -r requirements.txt
+python3 -m pip install risiparse
 ```
 
 ## Comment avoir un risitas sans message manquant ni message hors-sujet ?
@@ -42,9 +38,9 @@ Voir https://github.com/vichelisdelapaz/risicompare
 ## Utilisation
 
 ```
-kenny $ python3 risiparse.py -h
-usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [-l LINKS]
-                    [-i IDENTIFIERS [IDENTIFIERS ...]] [--no-resize-images] [--download-images] [-o OUTPUT_DIR]
+kenny $ risiparse -h
+usage: risiparse [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [-l LINKS] [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]] [--no-resize-images]
+                 [--download-images] [-o OUTPUT_DIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -55,59 +51,60 @@ optional arguments:
   -l LINKS, --links LINKS
                         The links file, Default : current dir/risitas-links
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script,example: a message that
-                        has the keyword 'hors-sujet',by adding 'hors-sujet' with this option,the script will
-                        match the message that has this keyword. Default : chapitre
-  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted
-                        in screenshot,it will try to display them to their full width Default : False
-  --download-images     Whether to download images locallyIf set, this will change all img[src] link to point to
-                        the local imagesDefault : False
+                        Give a list of words that are going to be matched by the script,example: a message that has the keyword 'hors-sujet',by adding 'hors-sujet' with this option,the
+                        script will match the message that has this keyword. Default : chapitre
+  --authors AUTHORS [AUTHORS ...]
+                        List of authors to be matched, by default the author of the first post author is considered as the author throughout the whole risitas, Default : Empty
+  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot,it will try to display them to their full width Default : False
+  --download-images     Whether to download images locallyIf set, this will change all img[src] link to point to the local imagesDefault : False
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         Output dir, Default is current dir
 ```
 
 Télécharger les risitas à partir de répertoire courant/risitas-links, dans rep courant/risitas-html puis convertir dans rep courant/risitas-pdf, les images susceptibles d'être des chapitres seront agrandis.
 
+Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les messages dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
+
 ```
-python3 risiparse.py
+risiparse
 ```
 
 Télécharger tous les messages de l'auteur
 
 ```
-python3 risiparse.py --all-messages
+risiparse --all-messages
 ```
 
 Ne pas télécharger les risitas, créer des pdfs depuis un répertoire contenant risitas-html
 
 ```
-python3 risiparse.py  --no-download -o <foo>
+risiparse  --no-download -o <foo>
 ```
 
 Télécharger uniquement les risitas en html, à partir d'un fichier contenant des liens vers les risitas
 
 ```
-python3 risiparse.py  --no-pdf -l <links-file>
+risiparse  --no-pdf -l <links-file>
 ```
 
 Télécharger les risitas sans agrandir les images qui pourraient être des chapitres.
 
 ```
-python3 risiparse.py  --no-resize-images
+risiparse  --no-resize-images
 ```
 
 Télécharger les messages contenant les mots clés suivants,
 peut aussi inclure un regexp. Voir les regexp de python
 
 ```
-python3 risiparse.py -i "chapitre" "partie" "chapitre \d"
+risiparse -i "chapitre" "partie" "chapitre \d"
 ```
 
 Télécharger les images localement et les utiliser dans l'html, utile dans le future
 si j'ai le temps de développer un GUI
 
 ```
-python3 risiparse.py --download-images
+risiparse --download-images
 ```
 
 
