@@ -245,7 +245,7 @@ def get_args() -> argparse.Namespace:
         '--output-dir',
         action="store",
         help="Output dir, Default is current dir",
-        default=str(pathlib.Path.home())
+        default=str(pathlib.Path.cwd())
     )
     args = parser.parse_args()
     return args
