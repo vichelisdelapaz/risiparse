@@ -194,7 +194,8 @@ class Posts():
         )
         if not no_match_author:
             for author in self.authors:
-                if re.match(author, post_author):
+                author_root = re.sub("\d*", "", author)
+                if author_root in post_author:
                     return True
         return True if post_author in self.authors else False
 
