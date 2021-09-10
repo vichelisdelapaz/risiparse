@@ -14,7 +14,7 @@ def write_html(
         title:str,
         author: str,
         posts: List,
-        output_dir: str,
+        output_dir: 'pathlib.Path',
 ) -> None:
     title_slug = slugify(title, title=True)
     author_slug = slugify(author, title=False)
@@ -22,7 +22,7 @@ def write_html(
     i = 0
     full_title = f"{author_slug}-{title_slug}-{i}"
     html_path = (
-        pathlib.Path(output_dir) /
+        output_dir /
         "risitas-html" /
         (full_title + f".{ext}")
     )
@@ -30,7 +30,7 @@ def write_html(
         i += 1
         full_title = f"{author_slug}-{title_slug}-{i}"
         html_path = (
-            pathlib.Path(output_dir) /
+            output_dir /
             "risitas-html" /
             (full_title + f".{ext}")
         )
@@ -96,13 +96,9 @@ def get_domain(url: str) -> str:
     return domain
 
 
-def make_dirs(output_dir: str) -> None:
-    (
-        pathlib.Path(output_dir) / "risitas-html"
-    ).mkdir(exist_ok=True, parents=True)
-    (
-        pathlib.Path(output_dir) / "risitas-pdf"
-    ).mkdir(exist_ok=True, parents=True)
+def make_dirs(output_dir: 'pathlib.Path') -> None:
+    (output_dir / "risitas-html").mkdir(exist_ok=True, parents=True)
+    (output_dir / "risitas-pdf").mkdir(exist_ok=True, parents=True)
 
 
 def get_selectors_and_site(link: str) -> None:
@@ -121,8 +117,8 @@ def get_selectors_and_site(link: str) -> None:
     return selectors, site
 
 
-def create_pdfs(output_dir: str) -> None:
-    html_folder_path = pathlib.Path(output_dir) / "risitas-html"
+def create_pdfs(output_dir: 'pathlib.Path') -> None:
+    html_folder_path = output_dir / "risitas-html"
     htmls = list(html_folder_path.glob("*.html"))
     if htmls:
         app = html_to_pdf.QtWidgets.QApplication([])
@@ -234,8 +230,8 @@ def get_args() -> argparse.Namespace:
         action="store_true",
         default=False,
         help=(
-            "If the name of the author is pogo and the message contains pogo111, it will be downloaded "
-            "automatically, this disables this feature "
+            "If the name of the author is pogo and the current post author is pogo111, it will be downloaded "
+            "this disables this feature "
             "Default : False"
         )
     )
@@ -245,7 +241,8 @@ def get_args() -> argparse.Namespace:
         '--output-dir',
         action="store",
         help="Output dir, Default is current dir",
-        default=str(pathlib.Path.cwd())
+        default=pathlib.Path.cwd(),
+        type=pathlib.Path
     )
     args = parser.parse_args()
     return args

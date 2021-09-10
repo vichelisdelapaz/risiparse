@@ -96,8 +96,8 @@ class PageDownloader():
             return False
 
 
-    def download_images(self, soup: BeautifulSoup) -> None:
-        img_folder_path = pathlib.Path.cwd() / "risitas-html" / "images"
+    def download_images(self, soup: BeautifulSoup, output_dir: pathlib.Path) -> None:
+        img_folder_path = output_dir / "risitas-html" / "images"
         img_folder_path.mkdir(exist_ok=True)
         for x in soup:
             imgs = x[0].select("img")
@@ -105,7 +105,7 @@ class PageDownloader():
                 link = img.attrs["src"]
                 file_name = link[link.rfind("/"):][1:]
                 if not self._image_exists(file_name, img_folder_path):
-                    logging.info("Image not in cache, downloading...")
+                    logging.info(f"Image not in cache, downloading {file_name}")
                     image = self.http.get(img.attrs["src"])
                     file_name = image.url[image.url.rfind("/"):][1:]
                     img_file_path = img_folder_path / file_name
@@ -426,7 +426,7 @@ def main() ->  None:
                     f"is : {posts.duplicates}"
                 )
             if download_images:
-                page_downloader.download_images(posts.risitas_html)
+                page_downloader.download_images(posts.risitas_html, args.output_dir)
             write_html(
                 risitas_info.title,
                 risitas_info.author,
@@ -436,6 +436,3 @@ def main() ->  None:
     if not args.no_pdf:
         create_pdfs(args.output_dir)
 
-
-if __name__ == "__main__":
-    main()

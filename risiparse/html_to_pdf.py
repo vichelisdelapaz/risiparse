@@ -15,7 +15,7 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
         self._htmls = []
         self.output_dir = output_dir
 
-        self.pdf_folder_path = pathlib.Path(output_dir) / "risitas-pdf"
+        self.pdf_folder_path = output_dir / "risitas-pdf"
 
         self.setZoomFactor(1)
         self.layout = QPageLayout()
