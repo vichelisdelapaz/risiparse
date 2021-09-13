@@ -530,30 +530,35 @@ class Posts():
             post: BeautifulSoup
     ) -> BeautifulSoup:
         new_html = []
-        risitas_html = post.select(
+        risitas_html = post.select_one(
             self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE.value
+        )
+        if risitas_html:
+            return risitas_html
+        risitas_html = post.select(
+               self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE2.value
         )
         if not risitas_html:
             risitas_html = post.select(
-                self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE2.value
+                self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE3.value
             )
-            for paragraph in risitas_html:
-                new_html.append(str(paragraph))
+        for paragraph in risitas_html:
+            new_html.append(str(paragraph))
             new_html_joined = "".join(new_html)
             risitas_html = BeautifulSoup(new_html_joined, features="lxml")
             # This is needed cuz beautifulsoup
             # add a html,body tag automatically
-            try:
-                risitas_html.html.wrap(
-                    risitas_html.new_tag(
-                        "div",
-                        attrs={"class": "txt-msg text-enrichi-forum"}
-                    )
+        try:
+            risitas_html.html.wrap(
+                risitas_html.new_tag(
+                    "div",
+                    attrs={"class": "txt-msg text-enrichi-forum"}
                 )
-                risitas_html.html.body.unwrap()
-                risitas_html.html.unwrap()
-            except AttributeError:
-                pass
+            )
+            risitas_html.html.body.unwrap()
+            risitas_html.html.unwrap()
+        except AttributeError:
+            pass
         return risitas_html
 
     def get_posts(

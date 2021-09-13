@@ -39,9 +39,10 @@ class Webarchive(Enum):
     AUTHOR_SELECTOR = "h2 + p > a"
     TOTAL_SELECTOR = ".page-links > a:last-child"
     MESSAGE_SELECTOR = ".entry-content"
-    RISITAS_TEXT_SELECTOR = ".entry-content > div"
-    RISITAS_TEXT_SELECTOR_ALTERNATIVE = ".entry-content >  h2:last-of-type ~ p"
-    RISITAS_TEXT_SELECTOR_ALTERNATIVE2 = (
+    RISITAS_TEXT_SELECTOR = ".entry-content > div.txt-msg.text-enrichi-forum"
+    RISITAS_TEXT_SELECTOR_ALTERNATIVE = ".entry-content > div"
+    RISITAS_TEXT_SELECTOR_ALTERNATIVE2 = ".entry-content >  h2:last-of-type ~ p"
+    RISITAS_TEXT_SELECTOR_ALTERNATIVE3 = (
         ".entry-content >  p"
     )  # Need to select all
     TITLE_SELECTOR = ".entry-content > h2"
