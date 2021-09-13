@@ -33,6 +33,20 @@ class Jvarchive(Enum):
     PAGE_TITLE_SELECTOR = "title"
 
 
+class Webarchive(Enum):
+    """The web.archive.org selectors"""
+    SITE = "web.archive.org"
+    AUTHOR_SELECTOR = "h2 + p > a"
+    TOTAL_SELECTOR = ".page-links > a:last-child"
+    MESSAGE_SELECTOR = ".entry-content"
+    RISITAS_TEXT_SELECTOR = ".entry-content > div"
+    RISITAS_TEXT_SELECTOR_ALTERNATIVE = ".entry-content >  h2:last-of-type ~ p"
+    RISITAS_TEXT_SELECTOR_ALTERNATIVE2 = (
+        ".entry-content >  p"
+    )  # Need to select all
+    TITLE_SELECTOR = ".entry-content > h2"
+    NOELSHACK_IMG_SELECTOR = ".entry-content > div > p > a > img"
+    PAGE_TITLE_SELECTOR = "title"
 
 
 class Noelshack(Enum):

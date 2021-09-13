@@ -8,6 +8,7 @@ import datetime
 import pathlib
 import re
 import requests
+import waybackpy
 
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
@@ -60,9 +61,12 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 class PageDownloader():
+    """Handle all the downloads made by risiparse"""
 
-    def __init__(self, site):
+    def __init__(self, site, domain):
         self.site = site
+        self.domain = domain
+        self.webarchive = bool(self.domain == Webarchive.SITE.value)
         self.http = requests.Session()
         self.retries = Retry(
             total=5,
@@ -72,23 +76,47 @@ class PageDownloader():
         self.adapter = TimeoutHTTPAdapter(max_retries=self.retries)
         self.http.mount("https://", self.adapter)
 
-
     def download_topic_page(
             self,
             page_link: str,
-            page_number: int = 1
-    ) -> BeautifulSoup:
-        page_link_number = [m.span() for m in re.finditer(r"\d*\d", page_link)]
-        page_link = (
-            page_link[:page_link_number[3][0]]
-            + str(page_number) +
-            page_link[page_link_number[3][1]:]
-        )
-        logging.info(f"Going to page {Fore.GREEN}{page_link}{Style.RESET_ALL}")
-        page = self.http.get(page_link)
+            page_number: int = 1,
+    ) -> Optional['BeautifulSoup']:
+        if not self.webarchive:
+            page_link = self._get_page_link(
+                page_number,
+                page_link
+            )
+        else:
+            webarchive_link = self._get_webarchive_page_link(
+                page_number,
+                page_link
+            )
+            if webarchive_link:
+                page_link = webarchive_link
+        logging.info(f"Going to page {page_link}")
+        try:
+            page = self.http.get(page_link)
+        except requests.exceptions.RetryError as e:
+            logging.exception(e)
+            logging.error(
+                f"The retries for {page_link} have failed, "
+                f"being rate limited/server overloaded"
+            )
+            return None
+        page_status = page.status_code
+        if page_status == 410:
+            logging.error(
+                "The page has been 410ed, try "
+                "with one from jvarchive or webarchive"
+            )
+        if self.webarchive and page_status == 404:
+            logging.error(
+                f"The Wayback Machine has not archived "
+                f"{page_link}"
+            )
+            return None
         soup = BeautifulSoup(page.content, features="lxml")
         return soup
-
 
     def download_img_page(self, page_link: str):
         page = self.http.get(page_link)
@@ -129,21 +157,100 @@ class PageDownloader():
         )
         return page_link
 
+    def _get_webarchive_page_link(
+            self,
+            page_number: int,
+            page_link: str
+    ) -> Optional[str]:
+        if page_number == 1:
+            return None
+        page_link_splitted = page_link.rsplit("/")
+        if len(page_link) == 11:
+            page_link = (
+                "/".join(page_link_splitted[:-2]) + f"/{page_number}/"
+            )
         else:
-            return False
+            page_link = (
+                "/".join(page_link_splitted[:-1]) + f"/{page_number}/"
+            )
+        return page_link
 
+    def get_webarchive_img(
+            self,
+            link: str,
+    ) -> Optional['requests.models.Response']:
+        logging.error(
+            f"The image at {link} "
+            "has been 404ed! Trying on "
+            "webarchive..."
+        )
+        user_agent = (
+            "Mozilla/5.0 (Windows NT 5.1; rv:40.0) "
+            "Gecko/20100101 Firefox/40.0"
+        )
+        try:
+            wayback = waybackpy.Url(link, user_agent)
+            oldest_archive = wayback.oldest()
+            oldest_archive_url = oldest_archive.archive_url
+            image = self.http.get(oldest_archive_url)
+            status_code = image.status_code
+        except waybackpy.exceptions.WaybackError as e:
+            logging.exception(e)
+            return None
+        if status_code != 200:
+            logging.error(
+                f"The image at {oldest_archive_url} "
+                "on the oldest archive could "
+                "not been downloaded"
+            )
+            return None
+        return image
 
-    def download_images(self, soup: BeautifulSoup, output_dir: pathlib.Path) -> None:
+    def get_webarchive_link(
+            self,
+            img: BeautifulSoup
+    ) -> str:
+        archive_link = img.attrs["src"]
+        contains_webarchive_link = contains_webarchive(
+            archive_link
+        )
+        if contains_webarchive_link:
+            link = strip_webarchive_link(archive_link)
+        else:
+            link = archive_link
+        return link
+
+    def download_images(
+            self,
+            soup: BeautifulSoup,
+            output_dir: pathlib.Path,
+    ) -> None:
         img_folder_path = output_dir / "risitas-html" / "images"
         img_folder_path.mkdir(exist_ok=True)
-        for x in soup:
-            imgs = x[0].select("img")
+        for page in soup:
+            imgs = page[0].select("img")
             for img in imgs:
-                link = img.attrs["src"]
+                if self.webarchive:
+                    link = self.get_webarchive_link(img)
+                else:
+                    link = img.attrs["src"]
                 file_name = link[link.rfind("/"):][1:]
                 if not self._image_exists(file_name, img_folder_path):
-                    logging.info(f"Image not in cache, downloading {file_name}")
-                    image = self.http.get(img.attrs["src"])
+                    logging.info(
+                        "Image not in cache, downloading "
+                        f"{file_name}"
+                    )
+                    try:
+                        image = self.http.get(link)
+                        status_code = image.status_code
+                    # Connection refused or others errors.
+                    except requests.exceptions.ConnectionError as e:
+                        logging.exception(e)
+                        continue
+                    if status_code == 404:
+                        image = self.get_webarchive_img(link)
+                        if not image:
+                            continue
                     file_name = image.url[image.url.rfind("/"):][1:]
                     img_file_path = img_folder_path / file_name
                     img_file_path.write_bytes(image.content)
@@ -187,6 +294,8 @@ class RisitasInfo():
                 "Can't get the risitas "
                 f"author, set author to '{author}'"
             )
+        if not author and self.domain == Webarchive.SITE.value:
+            author = "Pseudo supprimé"
         logging.info(
             f"The risitas author is : {author}"
         )
@@ -199,6 +308,14 @@ class RisitasInfo():
             ).text
         except AttributeError:
             topic_symbol = None
+        if not topic_symbol and self.domain == Webarchive.SITE.value:
+            logging.info(
+                "This risitas has only one "
+                "page!"
+            )
+            topic_pages = 1
+        else:
+            topic_pages = int(topic_symbol)
         return topic_pages
 
     def get_title(self, soup: BeautifulSoup) -> str:
@@ -242,6 +359,7 @@ class Posts():
         self.no_resize_images = no_resize_images
         self.authors: List[str] = []
         self.domain = domain
+        self.webarchive = bool(domain == Webarchive.SITE.value)
 
     def _check_post_author(
             self,
@@ -254,9 +372,14 @@ class Posts():
             post_author = post.select_one(
                 self.selectors.AUTHOR_SELECTOR.value
             ).text.strip()
-        except AttributeError as e:
-            logging.debug(f"Author deleted his account")
-            return False
+        except AttributeError:
+            if not self.webarchive:
+                logging.debug("Author deleted his account")
+                post_author = post.select_one(
+                    self.selectors.DELETED_AUTHOR_SELECTOR.value
+                ).text.strip()
+            else:
+                return False
         logging.debug(
             "The current author is "
             "{post_author} "
@@ -455,6 +578,9 @@ class Posts():
                 contains_paragraph = risitas_html.select("p")
             except AttributeError:
                 contains_paragraph = None
+            if self.webarchive and not contains_paragraph:
+                risitas_html = self._get_webarchive_post_html(post)
+            if not is_author and not self.webarchive:
                 continue
             contains_image = self._check_chapter_image(risitas_html)
             if contains_image:
@@ -577,6 +703,8 @@ def main() -> None:
                     risitas_html,
                     output_dir,
                 )
+            if domain == Webarchive.SITE.value:
+                risitas_html = replace_youtube_frames(risitas_html)
             write_html(
                 risitas_info.title,
                 risitas_info.author,

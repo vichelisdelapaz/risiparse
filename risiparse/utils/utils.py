@@ -125,6 +125,9 @@ def get_selectors_and_site(
     elif domain == "jvarchive.com":
         selectors = sites_selectors.Jvarchive
         site = "jvarchive"
+    elif domain == "web.archive.org":
+        selectors = sites_selectors.Webarchive
+        site = "webarchive"
     return selectors, site
 
 
@@ -266,6 +269,47 @@ def get_args() -> argparse.Namespace:
     )
     args = parser.parse_args()
     return args
+
+
+def contains_webarchive(archive_link: str) -> bool:
+    return bool("web.archive.org" in archive_link)
+
+
+def replace_youtube_embed(youtube_link: str) -> str:
+    archive_link_parse = urlparse(youtube_link)
+    video_id = archive_link_parse.path[
+        archive_link_parse.path.rfind("/"):
+    ][1:]
+    video_component = f"/watch?v={video_id}"
+    youtube_link = archive_link_parse._replace(
+        path=video_component, query=""
+    ).geturl()
+    return youtube_link
+
+
+def strip_webarchive_link(archive_link: str) -> str:
+    archive_link_parsed = urlparse(archive_link)
+    splitted_link = archive_link_parsed.geturl().split("/")[5:]
+    new_link = "/".join(splitted_link)
+    return new_link
+
+
+def replace_youtube_frames(soup: 'BeautifulSoup') -> 'BeautifulSoup':
+    for page in soup:
+        current_post = page[0]
+        frames = current_post.select(".embed-youtube > iframe")
+        spans = current_post.select(".embed-youtube")
+        bs = BeautifulSoup()
+        for frame, span in zip(frames, spans):
+            archive_link = frame.attrs["src"]
+            embed_link = strip_webarchive_link(archive_link)
+            youtube_link = replace_youtube_embed(embed_link)
+            p = bs.new_tag("p")
+            a = bs.new_tag("a", href=youtube_link)
+            a.string = f"{youtube_link}"
+            p.append(a)
+            span.replace_with(p)
+    return soup
 
 
 def parse_input_links(links):
