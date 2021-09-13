@@ -1,35 +1,50 @@
 #!/usr/bin/python3
 
+"""This is the main module containing the core routines for risiparse"""
+
+from typing import List, Optional
 import logging
-import requests
-import re
-import argparse
+import datetime
 import pathlib
+import re
+import requests
 
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from risiparse.sites_selectors import Noelshack
+from risiparse.sites_selectors import Noelshack, Jvc, Jvarchive, Webarchive
 from risiparse.utils.utils import (
     write_html,
     get_domain,
     make_dirs,
     get_selectors_and_site,
     create_pdfs,
-    read_links,
-    get_args
+    parse_input_links,
+    get_args,
+    strip_webarchive_link,
+    replace_youtube_frames,
+    contains_webarchive
 )
-from typing import List
-from colorama import Fore, Back, Style
+from risiparse.utils.log import ColorFormatter
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s:%(levelname)s: %(message)s'
-)
+LOGGER = logging.getLogger()
+LOGGER.setLevel(logging.INFO)
 
-DEFAULT_TIMEOUT = 5 # seconds
+FMT = '%(asctime)s:%(levelname)s: %(message)s'
+
+STDOUT_HANDLER = logging.StreamHandler()
+STDOUT_HANDLER.setLevel(logging.INFO)
+STDOUT_HANDLER.setFormatter(ColorFormatter(FMT))
+
+TODAY = datetime.date.today()
+
+LOGGER.addHandler(STDOUT_HANDLER)
+
+DEFAULT_TIMEOUT = 5  # seconds
+
 
 class TimeoutHTTPAdapter(HTTPAdapter):
+    """This takes care of the default timeout for all requests"""
     def __init__(self, *args, **kwargs):
         self.timeout = DEFAULT_TIMEOUT
         if "timeout" in kwargs:
@@ -83,15 +98,37 @@ class PageDownloader():
         ).attrs["src"]
         return img_link
 
-
-    def _change_src_path(self, img:str, img_folder_path: pathlib.Path, file_name: str) -> None:
+    def _change_src_path(
+            self,
+            img: 'BeautifulSoup',
+            img_folder_path: pathlib.Path,
+            file_name: str
+    ) -> None:
         img.attrs["src"] = str(img_folder_path) + "/" + file_name
 
-
-    def _image_exists(self, file_name: str, img_folder: pathlib.Path) -> bool:
+    def _image_exists(
+            self,
+            file_name: str,
+            img_folder: pathlib.Path
+    ) -> bool:
         img_path = img_folder / file_name
-        if img_path.exists():
-            return True
+        return bool(img_path.exists())
+
+    def _get_page_link(
+            self,
+            page_number: int,
+            page_link: str,
+    ):
+        page_link_number = [
+               m.span() for m in re.finditer(r"\d*\d", page_link)
+        ]
+        page_link = (
+               page_link[:page_link_number[3][0]]
+               + str(page_number) +
+               page_link[page_link_number[3][1]:]
+        )
+        return page_link
+
         else:
             return False
 
@@ -116,54 +153,86 @@ class PageDownloader():
 class RisitasInfo():
     """
     This gets the author name and the total number of pages and the title.
-    This assumes that the author didn't delete his account
     """
 
-    def __init__(self, page_soup, selectors):
+    def __init__(self, page_soup, selectors, domain):
         self.soup = page_soup
         self.selectors = selectors
+        self.domain = domain
         self.author = self.get_author_name(self.soup)
         self.pages_number = self.get_total_pages(self.soup)
         self.title = self.get_title(self.soup)
 
-
     def get_author_name(self, soup: BeautifulSoup) -> str:
-        author = soup.select_one(
-            self.selectors.AUTHOR_SELECTOR.value
-        ).text.strip()
-        logging.info(f"The risitas author is : {Fore.YELLOW}{author}{Style.RESET_ALL}")
+        if self.domain == "jeuxvideo.com":
+            author = soup.select_one(
+                self.selectors.DELETED_AUTHOR_SELECTOR.value
+            ).text.strip()
+            if author == "Pseudo supprimé":
+                logging.error(
+                    "The author has deleted his account, "
+                    "need to sort the message after this "
+                    "and look if he posted with an "
+                    "other account"
+                )
+                return author
+        try:
+            author = soup.select_one(
+                self.selectors.AUTHOR_SELECTOR.value
+            ).text.strip()
+        except AttributeError as e:
+            author = "unknown"
+            logging.exception(e)
+            logging.error(
+                "Can't get the risitas "
+                f"author, set author to '{author}'"
+            )
+        logging.info(
+            f"The risitas author is : {author}"
+        )
         return author
 
-
     def get_total_pages(self, soup: BeautifulSoup) -> int:
-        topic_symbol = soup.select_one(
-            self.selectors.TOTAL_SELECTOR.value
-        ).text
-        topic_pages = int(topic_symbol)
+        try:
+            topic_symbol = soup.select_one(
+                self.selectors.TOTAL_SELECTOR.value
+            ).text
+        except AttributeError:
+            topic_symbol = None
         return topic_pages
 
-
     def get_title(self, soup: BeautifulSoup) -> str:
-        title = soup.select_one(
-            self.selectors.TITLE_SELECTOR.value
-        ).text.strip()
+        try:
+            title = soup.select_one(
+                self.selectors.TITLE_SELECTOR.value
+            ).text.strip()
+        except AttributeError as e:
+            logging.exception(e)
+            logging.error(
+                "Can't get the title "
+                "author, setting the title to "
+                "the page title"
+            )
+            title = soup.select_one(
+                self.selectors.PAGE_TITLE_SELECTOR.value
+            ).text.strip()
         return title
 
 
 class Posts():
     """Get a post author and content"""
 
-
     def __init__(
             self,
             selectors: BeautifulSoup,
             downloader: PageDownloader,
-            site:str,
+            site: str,
+            domain: str,
             all_messages: bool = False,
-            no_resize_images: bool = False
+            no_resize_images: bool = False,
     ):
-        self.risitas_html = []
-        self.risitas_raw_text = []
+        self.risitas_html: List['BeautifulSoup'] = []
+        self.risitas_raw_text: List[str] = []
         self.count = 0
         self.duplicates = 0
         self.selectors = selectors
@@ -171,8 +240,8 @@ class Posts():
         self.downloader = downloader
         self.site = site
         self.no_resize_images = no_resize_images
-        self.authors = []
-
+        self.authors: List[str] = []
+        self.domain = domain
 
     def _check_post_author(
             self,
@@ -189,48 +258,46 @@ class Posts():
             logging.debug(f"Author deleted his account")
             return False
         logging.debug(
-            f"The current author is {Fore.BLUE}{post_author}{Style.RESET_ALL} " +
-            f"and the risitas author is {Fore.BLUE}{self.authors}{Style.RESET_ALL}"
+            "The current author is "
+            "{post_author} "
+            "and the risitas author is "
+            "{self.authors}"
         )
         if not no_match_author:
             for author in self.authors:
-                author_root = re.sub("\d*", "", author)
+                author_root = re.sub(r"\d*", "", author)
                 if author_root in post_author:
                     return True
-        return True if post_author in self.authors else False
-
+        return bool(post_author in self.authors)
 
     def _check_post_length(self, post: BeautifulSoup) -> bool:
         """Check the post length to see if this is a chapter
         or an offtopic message"""
         p = post.text.strip().replace("\n", "")
-        return True if len(p) < 1000 else False
-
+        return bool(len(p) < 1000)
 
     def _check_post_identifiers(
             self,
             post: BeautifulSoup,
             identifiers: List
     ) -> bool:
-        identifiers = "|".join(identifiers)
-        regexp = re.compile(identifiers, re.IGNORECASE)
+        identifiers_joined = "|".join(identifiers)
+        regexp = re.compile(identifiers_joined, re.IGNORECASE)
         try:
             post_paragraph_text = post.select_one("p").text[0:200]
         except AttributeError as e:
             logging.exception(
-                "The post doesn't contains text, probably some image"
+                f"The post doesn't contains text, probably some image {e}"
             )
             return False
         contains_identifiers = regexp.search(post_paragraph_text)
-        if contains_identifiers and not post.select_one("blockquote"):
-            return True
-        else:
-            return False
-
+        return bool(
+            contains_identifiers and not post.select_one("blockquote")
+        )
 
     def _check_post_duplicates(
             self,
-            risitas_html: str,
+            risitas_html: 'BeautifulSoup',
             contains_images: bool
     ) -> bool:
         if not self.risitas_raw_text:
@@ -241,28 +308,23 @@ class Posts():
                 if part[1] is True and risitas_html == part[0]:
                     ret_val = True
                     break
-                else:
-                    ret_val = False
             return ret_val
         for i in range(len(self.risitas_raw_text)):
-            if (
-                    risitas_html.text.lower() ==
-                    self.risitas_raw_text[-i].lower() or
-                    risitas_html.text[0:100].lower() ==
-                    self.risitas_raw_text[-i][0:100].lower()
-            ):
-                ret_val = True
+            ret_val = bool(
+                risitas_html.text.lower() ==
+                self.risitas_raw_text[-i].lower() or
+                risitas_html.text[0:100].lower() ==
+                self.risitas_raw_text[-i][0:100].lower()
+            )
         return ret_val
 
-
     def _contains_blockquote(self, risitas_html: BeautifulSoup) -> bool:
-        return True if risitas_html.select("blockquote") else False
-
+        return bool(risitas_html.select("blockquote"))
 
     def _check_chapter_image(self, soup: BeautifulSoup) -> bool:
         ret_val = False
         paragraphs = soup.select("p")
-        if not paragraphs and self.site == "jvarchive":
+        if not paragraphs and self.site == Jvarchive.SITE.value:
             a = soup.select("a")
             if a:
                 return True
@@ -271,7 +333,9 @@ class Posts():
             if re.search(r"screen|repost|supprime", paragraph.text):
                 if (
                         len(
-                            soup.select(self.selectors.NOELSHACK_IMG_SELECTOR.value)
+                            soup.select(
+                                self.selectors.NOELSHACK_IMG_SELECTOR.value
+                            )
                         ) >= 3 and not soup.select("blockquote") and
                         len(soup.text.strip()) < 300
 
@@ -281,7 +345,9 @@ class Posts():
             elif not paragraph.text.strip():
                 if (
                         len(
-                            soup.select(self.selectors.NOELSHACK_IMG_SELECTOR.value)
+                            soup.select(
+                                self.selectors.NOELSHACK_IMG_SELECTOR.value
+                            )
                         ) >= 3 and not soup.select("blockquote") and
                         len(soup.text.strip()) < 300
                 ):
@@ -289,7 +355,6 @@ class Posts():
             else:
                 ret_val = False
         return ret_val
-
 
     def _get_fullscale_image(self, soup: BeautifulSoup) -> BeautifulSoup:
         image_soup = soup
@@ -301,7 +366,7 @@ class Posts():
                     img.attrs.pop(remove_attr)
                 except KeyError as e:
                     logging.exception(f"This is a jvc smiley! {e}")
-        if self.site == "jvc":
+        if self.site == Jvc.SITE.value:
             for img in imgs:
                 if re.search("fichiers", img.attrs["alt"]):
                     img.attrs["src"] = img.attrs["alt"]
@@ -309,11 +374,64 @@ class Posts():
                     img.attrs["src"] = self.downloader.download_img_page(
                         img.attrs["alt"]
                     )
-        else:
+        elif self.site == Jvarchive.SITE.value:
             for img in imgs:
                 img.attrs["src"] = img.attrs["alt"]
         return image_soup
 
+    def _print_chapter_added(
+            self,
+            risitas_html: BeautifulSoup
+    ) -> None:
+        try:
+            pretty_print = risitas_html.select_one(
+                'p'
+            ).text[0:50].strip().replace("\n", "")
+            if not pretty_print:
+                logging.debug(
+                    "Added some images, maybe chapters in screenshot?"
+                )
+            else:
+                logging.info(
+                    "Adding "
+                    f"{pretty_print}"
+                )
+        except AttributeError as e:
+            logging.exception(
+                f"Can't log text because this "
+                f"is an image from jvarchive {e}"
+            )
+
+    def _get_webarchive_post_html(
+            self,
+            post: BeautifulSoup
+    ) -> BeautifulSoup:
+        new_html = []
+        risitas_html = post.select(
+            self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE.value
+        )
+        if not risitas_html:
+            risitas_html = post.select(
+                self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE2.value
+            )
+            for paragraph in risitas_html:
+                new_html.append(str(paragraph))
+            new_html_joined = "".join(new_html)
+            risitas_html = BeautifulSoup(new_html_joined, features="lxml")
+            # This is needed cuz beautifulsoup
+            # add a html,body tag automatically
+            try:
+                risitas_html.html.wrap(
+                    risitas_html.new_tag(
+                        "div",
+                        attrs={"class": "txt-msg text-enrichi-forum"}
+                    )
+                )
+                risitas_html.html.body.unwrap()
+                risitas_html.html.unwrap()
+            except AttributeError:
+                pass
+        return risitas_html
 
     def get_posts(
             self,
@@ -333,106 +451,139 @@ class Posts():
             risitas_html = post.select_one(
                 self.selectors.RISITAS_TEXT_SELECTOR.value
             )
-            if not is_author:
+            try:
+                contains_paragraph = risitas_html.select("p")
+            except AttributeError:
+                contains_paragraph = None
                 continue
             contains_image = self._check_chapter_image(risitas_html)
             if contains_image:
-                logging.debug(f"The current post contains images!")
+                logging.debug("The current post contains images!")
                 if not self.no_resize_images:
                     risitas_html = self._get_fullscale_image(risitas_html)
             if self.all_messages:
                 self.count += 1
                 self.risitas_html.append((risitas_html, ))
                 continue
-            contains_identifiers = self._check_post_identifiers(post, identifiers)
+            contains_identifiers = self._check_post_identifiers(
+                post,
+                identifiers
+            )
             is_short = self._check_post_length(post)
             contains_blockquote = self._contains_blockquote(risitas_html)
             if contains_blockquote:
                 continue
-            if not contains_identifiers and self.count > 1 and not contains_image and is_short:
+            if (
+                    not contains_identifiers and
+                    self.count > 1 and
+                    not contains_image
+                    and is_short
+            ):
                 continue
             if is_short and not contains_image:
                 continue
-            is_duplicate = self._check_post_duplicates(risitas_html, contains_image)
+            is_duplicate = self._check_post_duplicates(
+                risitas_html,
+                contains_image
+            )
             if is_duplicate:
                 logging.info(
                     (
                         "The current post "
-                        f"{Fore.RED}{risitas_html.select_one('p').text[0:50].strip()}{Style.RESET_ALL} "
+                        f"{risitas_html.select_one('p').text[0:50].strip()}"
                         "is a duplicate!"
                     )
                 )
                 self.duplicates += 1
                 continue
-            # Can't select p from jvarchive  because the attributes are malformed...
-            try:
-                pretty_print = risitas_html.select_one(
-                    'p'
-                ).text[0:50].strip().replace("\n", "")
-                if not pretty_print:
-                    logging.debug("Added some images, maybe chapters in screenshot?")
-                else:
-                    logging.info(f"Added {Fore.BLUE}{pretty_print}{Style.RESET_ALL}")
-            except AttributeError as e:
-                logging.exception(
-                    "Can't log text because this is an image from jvarchive"
-                )
+            self._print_chapter_added(risitas_html)
             self.risitas_html.append((risitas_html, contains_image))
             self.risitas_raw_text.append(risitas_html.text)
             self.count += 1
 
 
-def main() ->  None:
+def main() -> None:
     args = get_args()
-    make_dirs(args.output_dir)
+    output_dir = args.output_dir.expanduser().resolve()
+
+    # File logging
+    log_file = output_dir / f"risiparse-{TODAY}.log"
+    FILE_HANDLER = logging.FileHandler(log_file)
+    FILE_HANDLER.setLevel(logging.DEBUG)
+    FILE_HANDLER.setFormatter(logging.Formatter(FMT))
+    LOGGER.addHandler(FILE_HANDLER)
+
     all_messages = args.all_messages
     download_images = args.download_images
     identifiers = args.identifiers
-    if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
     no_match_author = args.no_match_author
+    no_resize_images = args.no_resize_images
+    make_dirs(output_dir)
+    if args.debug:
+        STDOUT_HANDLER.setLevel(logging.DEBUG)
+        FILE_HANDLER.setLevel(logging.DEBUG)
     if not args.no_download:
-        if isinstance(args.links, pathlib.Path):
-            page_links = read_links(args.links)
-        else:
-            page_links = args.links
+        page_links = parse_input_links(args.links)
         for link in page_links:
+            # This part is just used to get the risitas info
+            domain = get_domain(link)
             selectors, site = get_selectors_and_site(link)
             page_number: int = 1
-            page_downloader = PageDownloader(site)
-            soup = page_downloader.download_topic_page(link)
-            risitas_info = RisitasInfo(soup, selectors)
+            page_downloader = PageDownloader(site, domain)
+            soup = page_downloader.download_topic_page(
+                link,
+                page_number,
+            )
+            risitas_info = RisitasInfo(soup, selectors, domain)
             authors = [risitas_info.author] + args.authors
             posts = Posts(
                 selectors,
                 page_downloader,
                 site,
+                domain,
                 all_messages,
-                args.no_resize_images
+                no_resize_images,
             )
+            # Here we start downloading the messages
+            # according to the pages number
             for _ in range(risitas_info.pages_number):
                 soup = page_downloader.download_topic_page(
                     link, page_number
                 )
-                posts.get_posts(soup, authors, identifiers, no_match_author)
+                if not soup:
+                    page_number += 1
+                    continue
+                posts.get_posts(
+                    soup,
+                    authors,
+                    identifiers,
+                    no_match_author,
+                )
                 page_number += 1
             logging.info(
-                f"The number of posts downloaded for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "
+                "The number of posts downloaded for "
+                f"{risitas_info.title} "
                 f"is : {posts.count}"
             )
+            risitas_html = posts.risitas_html
             if not all_messages:
                 logging.info(
-                    f"The number of duplicates for {Fore.BLUE}{risitas_info.title}{Style.RESET_ALL} "
+                    "The number of duplicates for "
+                    f"{risitas_info.title} "
                     f"is : {posts.duplicates}"
                 )
             if download_images:
-                page_downloader.download_images(posts.risitas_html, args.output_dir)
+                page_downloader.download_images(
+                    risitas_html,
+                    output_dir,
+                )
             write_html(
                 risitas_info.title,
                 risitas_info.author,
-                posts.risitas_html,
-                args.output_dir,
+                risitas_html,
+                output_dir,
             )
     if not args.no_pdf:
-        create_pdfs(args.output_dir)
+        create_pdfs(output_dir)
+
 
