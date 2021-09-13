@@ -2,7 +2,8 @@
 
 """This module takes care of all logging related needs"""
 
-# Thanks to https://uran198.github.io/en/python/2016/07/12/colorful-python-logging.html
+# Thanks to
+# https://uran198.github.io/en/python/2016/07/12/colorful-python-logging.html
 
 import logging
 import colorama
@@ -14,6 +15,7 @@ LOG_COLORS = {
     logging.CRITICAL: colorama.Fore.RED,
     logging.WARNING: colorama.Fore.YELLOW
 }
+
 
 class ColorFormatter(logging.Formatter):
     def format(self, record, *args, **kwargs):
