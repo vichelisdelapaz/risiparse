@@ -13,4 +13,5 @@ risiparse.egg-info/entry_points.txt
 risiparse.egg-info/requires.txt
 risiparse.egg-info/top_level.txt
 risiparse/utils/__init__.py
+risiparse/utils/log.py
 risiparse/utils/utils.py
