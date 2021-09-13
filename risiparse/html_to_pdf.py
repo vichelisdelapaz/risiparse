@@ -17,6 +17,13 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
 
         self.pdf_folder_path = output_dir / "risitas-pdf"
 
+        self.settings = (
+            QtWebEngineWidgets.QWebEngineSettings.globalSettings()
+        )
+        self.settings.setAttribute(
+            QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, False
+        )
+
         self.setZoomFactor(1)
         self.layout = QPageLayout()
         self.layout.setPageSize(QPageSize(QPageSize.A4))
