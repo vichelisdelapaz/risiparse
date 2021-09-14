@@ -20,7 +20,7 @@ def write_html(
         author: str,
         posts: List,
         output_dir: 'pathlib.Path',
-) -> None:
+) -> 'pathlib.Path':
     title_slug = slugify(title, title=True)
     author_slug = slugify(author, title=False)
     ext = "html"
@@ -60,6 +60,7 @@ def write_html(
         )
         f.write(html)
         logging.info(f"Wrote {html_path}")
+    return html_path
 
 
 def _remove_risitas(title: str) -> str:
