@@ -10,7 +10,10 @@ class Jvc(Enum):
     SITE = "jeuxvideo.com"
     AUTHOR_SELECTOR = ".bloc-header > span"
     DELETED_AUTHOR_SELECTOR = ".bloc-pseudo-msg"
-    TOTAL_SELECTOR = ".bloc-liste-num-page > span:nth-last-of-type(2)"
+    TOTAL_SELECTOR = ".bloc-liste-num-page > span:nth-last-of-type(1)"
+    TOTAL_SELECTOR_ALTERNATIVE = (
+        ".bloc-liste-num-page > span:nth-last-of-type(2)"
+    )
     MESSAGE_SELECTOR = ".conteneur-message"
     RISITAS_TEXT_SELECTOR = "[class='txt-msg text-enrichi-forum']"
     TITLE_SELECTOR = "#bloc-title-forum"
@@ -41,7 +44,9 @@ class Webarchive(Enum):
     MESSAGE_SELECTOR = ".entry-content"
     RISITAS_TEXT_SELECTOR = ".entry-content > div.txt-msg.text-enrichi-forum"
     RISITAS_TEXT_SELECTOR_ALTERNATIVE = ".entry-content > div"
-    RISITAS_TEXT_SELECTOR_ALTERNATIVE2 = ".entry-content >  h2:last-of-type ~ p"
+    RISITAS_TEXT_SELECTOR_ALTERNATIVE2 = (
+        ".entry-content >  h2:last-of-type ~ p"
+    )
     RISITAS_TEXT_SELECTOR_ALTERNATIVE3 = (
         ".entry-content >  p"
     )  # Need to select all

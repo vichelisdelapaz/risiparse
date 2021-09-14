@@ -63,8 +63,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 class PageDownloader():
     """Handle all the downloads made by risiparse"""
 
-    def __init__(self, site, domain):
-        self.site = site
+    def __init__(self, domain):
         self.domain = domain
         self.webarchive = bool(self.domain == Webarchive.SITE.value)
         self.http = requests.Session()
@@ -306,6 +305,11 @@ class RisitasInfo():
             topic_symbol = soup.select_one(
                 self.selectors.TOTAL_SELECTOR.value
             ).text
+            if self.domain == Jvc.SITE.value:
+                if topic_symbol == "»":
+                    topic_symbol = soup.select_one(
+                        self.selectors.TOTAL_SELECTOR_ALTERNATIVE.value
+                    ).text
         except AttributeError:
             topic_symbol = None
         if not topic_symbol and self.domain == Webarchive.SITE.value:
@@ -343,7 +347,6 @@ class Posts():
             self,
             selectors: BeautifulSoup,
             downloader: PageDownloader,
-            site: str,
             domain: str,
             all_messages: bool = False,
             no_resize_images: bool = False,
@@ -355,7 +358,6 @@ class Posts():
         self.selectors = selectors
         self.all_messages = all_messages
         self.downloader = downloader
-        self.site = site
         self.no_resize_images = no_resize_images
         self.authors: List[str] = []
         self.domain = domain
@@ -447,7 +449,7 @@ class Posts():
     def _check_chapter_image(self, soup: BeautifulSoup) -> bool:
         ret_val = False
         paragraphs = soup.select("p")
-        if not paragraphs and self.site == Jvarchive.SITE.value:
+        if not paragraphs and self.domain == Jvarchive.SITE.value:
             a = soup.select("a")
             if a:
                 return True
@@ -487,9 +489,12 @@ class Posts():
             for img in imgs:
                 try:
                     img.attrs.pop(remove_attr)
+                    logging.info(
+                        f"Displaying {img.attrs['src']} at full scale!"
+                    )
                 except KeyError as e:
                     logging.exception(f"This is a jvc smiley! {e}")
-        if self.site == Jvc.SITE.value:
+        if self.domain == Jvc.SITE.value:
             for img in imgs:
                 if re.search("fichiers", img.attrs["alt"]):
                     img.attrs["src"] = img.attrs["alt"]
@@ -497,7 +502,7 @@ class Posts():
                     img.attrs["src"] = self.downloader.download_img_page(
                         img.attrs["alt"]
                     )
-        elif self.site == Jvarchive.SITE.value:
+        elif self.domain == Jvarchive.SITE.value:
             for img in imgs:
                 img.attrs["src"] = img.attrs["alt"]
         return image_soup
@@ -510,6 +515,9 @@ class Posts():
             pretty_print = risitas_html.select_one(
                 'p'
             ).text[0:50].strip().replace("\n", "")
+            if not pretty_print and len(risitas_html.select("p")) > 1:
+                pretty_print = risitas_html.select("p")[1].text[
+                    0:50].strip().replace("\n", "")
             if not pretty_print:
                 logging.debug(
                     "Added some images, maybe chapters in screenshot?"
@@ -533,7 +541,7 @@ class Posts():
         risitas_html = post.select_one(
             self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE.value
         )
-        if risitas_html:
+        if risitas_html and risitas_html.p:
             return risitas_html
         risitas_html = post.select(
                self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE2.value
@@ -658,9 +666,9 @@ def main() -> None:
         for link in page_links:
             # This part is just used to get the risitas info
             domain = get_domain(link)
-            selectors, site = get_selectors_and_site(link)
+            selectors = get_selectors_and_site(link)
             page_number: int = 1
-            page_downloader = PageDownloader(site, domain)
+            page_downloader = PageDownloader(domain)
             soup = page_downloader.download_topic_page(
                 link,
                 page_number,
@@ -670,7 +678,6 @@ def main() -> None:
             posts = Posts(
                 selectors,
                 page_downloader,
-                site,
                 domain,
                 all_messages,
                 no_resize_images,
@@ -718,5 +725,4 @@ def main() -> None:
             )
     if not args.no_pdf:
         create_pdfs(output_dir)
-
 

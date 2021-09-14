@@ -121,14 +121,11 @@ def get_selectors_and_site(
     domain = get_domain(link)
     if domain == "jeuxvideo.com":
         selectors = sites_selectors.Jvc
-        site = "jvc"
     elif domain == "jvarchive.com":
         selectors = sites_selectors.Jvarchive
-        site = "jvarchive"
     elif domain == "web.archive.org":
         selectors = sites_selectors.Webarchive
-        site = "webarchive"
-    return selectors, site
+    return selectors
 
 
 def create_pdfs(output_dir: 'pathlib.Path') -> None:
@@ -165,7 +162,7 @@ def get_args() -> argparse.Namespace:
         "--no-pdf",
         action="store_true",
         default=False,
-        help="Default : False"
+        help="Default : False, only download html"
     )
     parser.add_argument(
         "--debug",
@@ -177,7 +174,10 @@ def get_args() -> argparse.Namespace:
         "--no-download",
         action="store_true",
         default=False,
-        help="Default : False"
+        help=(
+            "Default : False, Create pdfs directly from current dir "
+            "or one specified by -o"
+        )
     )
     parser.add_argument(
         "-l", "--links",
