@@ -35,6 +35,7 @@ def create_db() -> None:
 
 
 def read_db(page_link: str):
+    create_db()
     con = sqlite3.connect(DB_PATH)
     try:
         with con:
@@ -43,15 +44,18 @@ def read_db(page_link: str):
                 (page_link, )
             )
             risitas_row = cursor.fetchone()
-            cursor_author = con.execute(
-                '''select name from authors where risitas_id = ?''',
-                (risitas_row[0], )
-            )
-            authors_row = cursor_author.fetchall()
+            rows = [risitas_row]
+            if risitas_row:
+                cursor_author = con.execute(
+                    '''select name from authors where risitas_id = ?''',
+                    (risitas_row[0], )
+                )
+                authors_row = cursor_author.fetchall()
+                rows.append(authors_row)
     except sqlite3.IntegrityError as e:
         logging.exception(e)
     con.close()
-    return risitas_row, authors_row
+    return rows
 
 
 def update_db(
@@ -65,42 +69,88 @@ def update_db(
         authors: List,
 ) -> None:
     create_db()
+    # Need to handle the updates of existing rows
     file_path_str = str(file_path)
     con = sqlite3.connect(DB_PATH)
-    try:
-        with con:
-            cursor = con.execute(
-                '''INSERT INTO risitas
-                (domain,
-                title,
-                page_link,
-                file_path,
-                total_pages,
-                current_page,
-                message_cursor)
-                VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                (
-                    domain,
-                    title,
-                    page_link,
-                    file_path_str,
-                    total_pages,
-                    current_page,
-                    message_cursor,
-                )
-            )
-            for author in authors:
-                con.execute(
-                    '''INSERT INTO authors
-                    (name, risitas_id)
-                    VALUES (?, ?)''',
+    cursor_existing_row = con.execute(
+        '''select id from risitas where page_link = ? limit 1''', (page_link, )
+    ).fetchone()
+    if cursor_existing_row:
+        try:
+            with con:
+                cursor = con.execute(
+                    '''UPDATE risitas
+                    SET domain = ?,
+                    title = ?,
+                    page_link = ?,
+                    file_path = ?,
+                    total_pages = ?,
+                    current_page = ?,
+                    message_cursor = ?
+                    WHERE id = ?''',
                     (
-                        author,
-                        cursor.lastrowid,
+                        domain,
+                        title,
+                        page_link,
+                        file_path_str,
+                        total_pages,
+                        current_page,
+                        message_cursor,
+                        cursor_existing_row[0],
                     )
                 )
-    except sqlite3.IntegrityError as e:
-        logging.exception(e)
+                cursor_existing_row = con.execute(
+                    '''select name from authors where id = ?''', (cursor_existing_row[0], )
+                ).fetchall()
+                stored_authors = [author[0] for author in cursor_existing_row]
+                for author in authors:
+                    if author not in stored_authors:
+                        con.execute(
+                            '''INSERT INTO authors
+                            (name, risitas_id)
+                            VALUES (?, ?)''',
+                            (
+                                author,
+                                cursor_existing_row[0],
+                            )
+                        )
+        except sqlite3.IntegrityError as e:
+            logging.exception(e)
+    else:
+        try:
+            with con:
+                cursor = con.execute(
+                    '''INSERT INTO risitas
+                    (domain,
+                    title,
+                    page_link,
+                    file_path,
+                    total_pages,
+                    current_page,
+                    message_cursor)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                    (
+                        domain,
+                        title,
+                        page_link,
+                        file_path_str,
+                        total_pages,
+                        current_page,
+                        message_cursor,
+                    )
+                )
+                for author in authors:
+                    con.execute(
+                        '''INSERT INTO authors
+                        (name, risitas_id)
+                        VALUES (?, ?)''',
+                        (
+                            author,
+                            cursor.lastrowid,
+                        )
+                    )
+        except sqlite3.IntegrityError as e:
+            logging.exception(e)
     con.close()
 
 
