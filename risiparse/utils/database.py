@@ -8,6 +8,7 @@ import logging
 
 DB_PATH = pathlib.Path(__file__).parent.parent.parent / "risiparse.db"
 
+
 def _replace_page_number(page_link: str) -> str:
     """
     The link stored in the database has a variable page number
@@ -80,7 +81,7 @@ def update_db(
         domain: str,
         title: str,
         page_link: str,
-        file_path: str,
+        file_path: 'pathlib.Path',
         total_pages: int,
         current_page: int,
         message_cursor: int,
@@ -204,4 +205,3 @@ def update_db(
 def delete_db() -> None:
     DB_PATH.unlink()
     logging.info(f"Deleted database at {DB_PATH}")
-
