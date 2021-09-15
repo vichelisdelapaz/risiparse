@@ -1,11 +1,28 @@
 #!/usr/bin/python3
 
-from typing import List
+from typing import List, Optional
 import sqlite3
+import re
 import pathlib
 import logging
 
 DB_PATH = pathlib.Path(__file__).parent.parent.parent / "risiparse.db"
+
+def _replace_page_number(page_link: str) -> str:
+    """
+    The link stored in the database has a variable page number
+    so we replace the the page number in the link by % to match
+    the link.
+    """
+    page_link_number = [
+              m.span() for m in re.finditer(r"\d*\d", page_link)
+    ]
+    page_link = (
+              page_link[:page_link_number[3][0]]
+              + '%'
+    )
+    return page_link
+
 
 def create_db() -> None:
     con = sqlite3.connect(DB_PATH)
@@ -34,14 +51,15 @@ def create_db() -> None:
     con.close()
 
 
-def read_db(page_link: str):
+def read_db(page_link: str) -> List[Optional[tuple]]:
     create_db()
     con = sqlite3.connect(DB_PATH)
+    page_link_normalized = _replace_page_number(page_link)
     try:
         with con:
             cursor = con.execute(
-                '''select * from risitas where page_link = ?''',
-                (page_link, )
+                '''select * from risitas where page_link LIKE ? limit 1''',
+                (page_link_normalized, )
             )
             risitas_row = cursor.fetchone()
             rows = [risitas_row]
@@ -72,8 +90,10 @@ def update_db(
     # Need to handle the updates of existing rows
     file_path_str = str(file_path)
     con = sqlite3.connect(DB_PATH)
+    page_link_normalized = _replace_page_number(page_link)
     cursor_existing_row = con.execute(
-        '''select id from risitas where page_link = ? limit 1''', (page_link, )
+        '''select id from risitas where page_link like ? limit 1''',
+        (page_link_normalized, )
     ).fetchone()
     if cursor_existing_row:
         try:
@@ -99,8 +119,16 @@ def update_db(
                         cursor_existing_row[0],
                     )
                 )
+                logging.info("A risitas has been updated!")
+                logging.debug(
+                    f"Id: {id} "
+                    f"Title: {title} "
+                    f"Current page: {current_page} "
+                    f"Total pages : {total_pages}"
+                )
                 cursor_existing_row = con.execute(
-                    '''select name from authors where id = ?''', (cursor_existing_row[0], )
+                    '''select name from authors where id = ?''',
+                    (cursor_existing_row[0], )
                 ).fetchall()
                 stored_authors = [author[0] for author in cursor_existing_row]
                 for author in authors:
@@ -113,6 +141,9 @@ def update_db(
                                 author,
                                 cursor_existing_row[0],
                             )
+                        )
+                        logging.debug(
+                            f"Author : {author} has been inserted!"
                         )
         except sqlite3.OperationalError as e:
             logging.exception(e)
@@ -139,6 +170,13 @@ def update_db(
                         message_cursor,
                     )
                 )
+                logging.info("A new risitas has been inserted!")
+                logging.debug(
+                    f"Id: {cursor.lastrowid} "
+                    f"Title: {title} "
+                    f"Current page: {current_page} "
+                    f"Total pages : {total_pages}"
+                )
                 for author in authors:
                     con.execute(
                         '''INSERT INTO authors
@@ -148,6 +186,9 @@ def update_db(
                             author,
                             cursor.lastrowid,
                         )
+                    )
+                    logging.debug(
+                        f"Author : {author} has been inserted!"
                     )
         except sqlite3.OperationalError as e:
             logging.exception(e)
