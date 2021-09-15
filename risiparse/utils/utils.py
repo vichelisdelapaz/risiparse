@@ -270,6 +270,28 @@ def get_args() -> argparse.Namespace:
             "Default : False"
         )
     )
+    # Clear database
+    parser.add_argument(
+        "--clear-database",
+        action="store_true",
+        default=False,
+        help=(
+            "If set, will remove the database"
+            "Default : False"
+        )
+    )
+    # Don't use the database
+    parser.add_argument(
+        "--no-database",
+        action="store_true",
+        default=False,
+        help=(
+            "If set, this will download a new html file "
+            "instead of appending to an existing one and not modify records "
+            "in the database "
+            "Default : False"
+        )
+    )
     # Output dir
     parser.add_argument(
         '-o',
