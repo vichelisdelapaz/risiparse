@@ -216,7 +216,7 @@ def get_args() -> argparse.Namespace:
         "--create-pdfs",
         nargs='+',
         help=(
-            "A list of html file to create pdfs from "
+            "A list of html files path to create pdfs from "
             "If this option is not specified with --no-download "
             "the pdfs will be created for all html files in risitas-html"
         ),
