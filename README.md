@@ -98,18 +98,6 @@ risitas-links est un fichier avec un lien par ligne, -o spécifie le répertoire
 risiparse -l risitas-links -o ~/tmp --download-images
 ```
 
-Si vous relancez la commande le script va directement aller à la dernière page du risitas et vérifier
-si il y'a de nouveaux chapitres, le nombre de page, la position du message de l'auteur est gardé 
-dans une base de données.
-
-Ce qui veut dire qu'il est possible d'automatiser le script avec un cronjob/script pour le lancer
-à une intervalle précise.
-
-```
-risiparse -l risitas-links -o ~/tmp
-```
-
-
 La hiérarchie suivante sera créée
 
 ```
@@ -131,6 +119,17 @@ La hiérarchie suivante sera créée
     ├── kelemorph-ma-vie-avec-une-sourde-0.pdf
     ├── pogo112-risitas-mon-ancienne-vie-de-celestin-kikouj-0.pdf
     └── turkissou9-un-celestin-a-istanbul-0.pdf
+```
+
+Si vous relancez la commande le script va directement aller à la dernière page du risitas et vérifier
+si il y'a de nouveaux chapitres, le nombre de page, la position du message de l'auteur est gardé 
+dans une base de données.
+
+Ce qui veut dire qu'il est possible d'automatiser le script avec un cronjob/script pour le lancer
+à une intervalle précise.
+
+```
+risiparse -l risitas-links -o ~/tmp
 ```
 
 Ne pas oublier de mettre l'option `--debug` si rien n'a l'air de se passer pour avoir les détails.
@@ -206,8 +205,15 @@ Télécharger les risitas sans utiliser la base de données
 risiparse --no-database
 ```
 
-En cas de problème avec la base de données
+En cas de problème avec la base de données, après si y'a un problème autre va falloir
+plonger les mains dans le cambouis et utiliser sqlite3 pour éditer à la main.
 
 ```
 risiparse --clear-database
+```
+
+## Tests
+
+```
+tox
 ```
