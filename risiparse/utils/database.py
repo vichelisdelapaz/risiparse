@@ -29,7 +29,7 @@ def create_db() -> None:
                 risitas_id integer,
                 foreign key(risitas_id) references risitas(id))'''
             )
-    except sqlite3.IntegrityError as e:
+    except sqlite3.OperationalError as e:
         logging.exception(e)
     con.close()
 
@@ -52,7 +52,7 @@ def read_db(page_link: str):
                 )
                 authors_row = cursor_author.fetchall()
                 rows.append(authors_row)
-    except sqlite3.IntegrityError as e:
+    except sqlite3.OperationalError as e:
         logging.exception(e)
     con.close()
     return rows
@@ -114,7 +114,7 @@ def update_db(
                                 cursor_existing_row[0],
                             )
                         )
-        except sqlite3.IntegrityError as e:
+        except sqlite3.OperationalError as e:
             logging.exception(e)
     else:
         try:
@@ -149,7 +149,7 @@ def update_db(
                             cursor.lastrowid,
                         )
                     )
-        except sqlite3.IntegrityError as e:
+        except sqlite3.OperationalError as e:
             logging.exception(e)
     con.close()
 
