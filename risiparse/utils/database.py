@@ -119,7 +119,9 @@ def update_db(
                         cursor_existing_row[0],
                     )
                 )
-                logging.info("A risitas has been updated!")
+                logging.info(
+                    "A risitas has been updated in the database!"
+                )
                 logging.debug(
                     f"Id: {id} "
                     f"Title: {title} "
@@ -143,7 +145,8 @@ def update_db(
                             )
                         )
                         logging.debug(
-                            f"Author : {author} has been inserted!"
+                            f"Author : {author} "
+                            "has been inserted in the database!"
                         )
         except sqlite3.OperationalError as e:
             logging.exception(e)
@@ -170,7 +173,9 @@ def update_db(
                         message_cursor,
                     )
                 )
-                logging.info("A new risitas has been inserted!")
+                logging.info(
+                    "A new risitas has been inserted in the database!"
+                )
                 logging.debug(
                     f"Id: {cursor.lastrowid} "
                     f"Title: {title} "
@@ -188,7 +193,8 @@ def update_db(
                         )
                     )
                     logging.debug(
-                        f"Author : {author} has been inserted!"
+                        f"Author : {author} "
+                        "has been inserted in the database!"
                     )
         except sqlite3.OperationalError as e:
             logging.exception(e)
