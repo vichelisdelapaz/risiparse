@@ -677,6 +677,8 @@ def main() -> None:
     no_resize_images = args.no_resize_images
     clear_database = args.clear_database
     no_database = args.no_database
+    create_pdfs_user = args.create_pdfs
+    htmls_file_path = None
     if clear_database:
         delete_db()
         sys.exit()
@@ -686,6 +688,7 @@ def main() -> None:
         FILE_HANDLER.setLevel(logging.DEBUG)
     if not args.no_download:
         page_links = parse_input_links(args.links)
+        htmls_file_path = []
         for link in page_links:
             # This part is just used to get the risitas info
             domain = get_domain(link)
@@ -772,6 +775,7 @@ def main() -> None:
                 risitas_html = replace_youtube_frames(risitas_html)
             if append and not no_database:
                 file_path = pathlib.Path(row[0][4])
+                htmls_file_path.append(file_path)
                 append_html(file_path, risitas_html)
             else:
                 file_path = write_html(
@@ -780,6 +784,7 @@ def main() -> None:
                     risitas_html,
                     output_dir,
                 )
+                htmls_file_path.append(file_path)
             if not no_database:
                 update_db(
                     domain,
@@ -792,4 +797,4 @@ def main() -> None:
                     authors,
                 )
     if not args.no_pdf:
-        create_pdfs(output_dir)
+        create_pdfs(output_dir, create_pdfs_user, htmls_file_path)

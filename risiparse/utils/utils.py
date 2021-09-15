@@ -140,9 +140,18 @@ def get_selectors_and_site(
     return selectors
 
 
-def create_pdfs(output_dir: 'pathlib.Path') -> None:
+def create_pdfs(
+        output_dir: 'pathlib.Path',
+        html_user: List['pathlib.Path'] = None,
+        html_download: List['pathlib.Path'] = None,
+) -> None:
     html_folder_path = output_dir / "risitas-html"
-    htmls = list(html_folder_path.glob("*.html"))
+    if not html_user and not html_download:
+        htmls = list(html_folder_path.glob("*.html"))
+    elif html_user:
+        htmls = html_user
+    elif html_download:
+        htmls = html_download
     if htmls:
         app = html_to_pdf.QtWidgets.QApplication([])
         page = html_to_pdf.PdfPage(output_dir)
@@ -191,6 +200,7 @@ def get_args() -> argparse.Namespace:
             "or one specified by -o"
         )
     )
+    # Links
     parser.add_argument(
         "-l", "--links",
         action="store",
@@ -200,6 +210,17 @@ def get_args() -> argparse.Namespace:
             "The links file, or links from standard input, "
             "Default : current dir/risitas-links"
         )
+    )
+    # Pdfs to create
+    parser.add_argument(
+        "--create-pdfs",
+        nargs='+',
+        help=(
+            "A list of html file to create pdfs from "
+            "If this option is not specified with --no-download "
+            "the pdfs will be created for all html files in risitas-html"
+        ),
+        type=lambda p: pathlib.Path(p).expanduser().resolve()
     )
     # Take a list of identifiers
     parser.add_argument(
@@ -211,7 +232,7 @@ def get_args() -> argparse.Namespace:
             "example: a message that has the keyword 'hors-sujet', "
             "by adding 'hors-sujet' with this option, "
             "the script will match the message that has this keyword. "
-            "Default : chapitre"
+            "Default : 'chapitre'"
         ),
         required=False,
         default=["chapitre"],
@@ -224,7 +245,7 @@ def get_args() -> argparse.Namespace:
         help=(
             "List of authors to be matched, by default the author of "
             "the first post author is considered as the author "
-            "throughout the whole risitas "
+            "throughout the whole risitas, "
             "Default : Empty"
         ),
         required=False,
@@ -237,7 +258,7 @@ def get_args() -> argparse.Namespace:
         help=(
             "When the script 'thinks' that the post contains images "
             "and that they are chapters posted in screenshot, "
-            "it will try to display them to their full width "
+            "it will try to display them to their full width, "
             "Default : False"
         ),
         action="store_true",
@@ -251,7 +272,7 @@ def get_args() -> argparse.Namespace:
             "If set, this will change all img[src] link to point "
             "to the local images "
             "Also this will try to download risitas sticker on webarchive "
-            "if they have been 404ed "
+            "if they have been 404ed, "
             "Default : False"
         ),
         action="store_true",
@@ -266,7 +287,7 @@ def get_args() -> argparse.Namespace:
         help=(
             "If the name of the author is pogo and the current "
             "post author is pogo111, it will be downloaded "
-            "this disables this feature "
+            "this disables this feature, "
             "Default : False"
         )
     )
@@ -276,7 +297,7 @@ def get_args() -> argparse.Namespace:
         action="store_true",
         default=False,
         help=(
-            "If set, will remove the database"
+            "If set, will remove the database, "
             "Default : False"
         )
     )
@@ -288,7 +309,7 @@ def get_args() -> argparse.Namespace:
         help=(
             "If set, this will download a new html file "
             "instead of appending to an existing one and not modify records "
-            "in the database "
+            "in the database, "
             "Default : False"
         )
     )
