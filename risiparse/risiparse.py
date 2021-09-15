@@ -582,7 +582,7 @@ class Posts():
             no_match_author: bool,
             append: bool,
             message_cursor_db: int,
-    ) -> bool:
+    ) -> None:
         posts = soup.select(self.selectors.MESSAGE_SELECTOR.value)
         # Counter necessary to keep the first post in risitas
         # This post usually have no identifiers and is used
@@ -740,7 +740,11 @@ def main() -> None:
                     message_cursor_db
                 )
                 page_number += 1
-                if posts.message_cursor and page + 1 == total_pages and posts.added_message:
+                if (
+                        posts.message_cursor and
+                        page + 1 == total_pages and
+                        posts.added_message
+                ):
                     message_cursor = posts.message_cursor
                 else:
                     message_cursor = 0
