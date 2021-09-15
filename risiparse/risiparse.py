@@ -266,7 +266,7 @@ class RisitasInfo():
         self.selectors = selectors
         self.domain = domain
         self.author = self.get_author_name(self.soup)
-        self.pages_number = self.get_total_pages(self.soup)
+        self.total_pages = self.get_total_pages(self.soup)
         self.title = self.get_title(self.soup)
 
     def get_author_name(self, soup: BeautifulSoup) -> str:
