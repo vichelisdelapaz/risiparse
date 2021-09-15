@@ -3,6 +3,7 @@
 """This is the main module containing the core routines for risiparse"""
 
 from typing import List, Optional
+import sys
 import logging
 import datetime
 import pathlib
@@ -16,6 +17,7 @@ from requests.packages.urllib3.util.retry import Retry
 from risiparse.sites_selectors import Noelshack, Jvc, Jvarchive, Webarchive
 from risiparse.utils.utils import (
     write_html,
+    append_html,
     get_domain,
     make_dirs,
     get_selectors_and_site,
@@ -27,6 +29,7 @@ from risiparse.utils.utils import (
     contains_webarchive
 )
 from risiparse.utils.log import ColorFormatter
+from risiparse.utils.database import update_db, read_db, delete_db
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
@@ -63,7 +66,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 class PageDownloader():
     """Handle all the downloads made by risiparse"""
 
-    def __init__(self, domain):
+    def __init__(self, domain: str):
         self.domain = domain
         self.webarchive = bool(self.domain == Webarchive.SITE.value)
         self.http = requests.Session()
@@ -117,7 +120,7 @@ class PageDownloader():
         soup = BeautifulSoup(page.content, features="lxml")
         return soup
 
-    def download_img_page(self, page_link: str):
+    def download_img_page(self, page_link: str) -> str:
         page = self.http.get(page_link)
         soup = BeautifulSoup(page.content, features="lxml")
         img_link = soup.select_one(
@@ -145,7 +148,7 @@ class PageDownloader():
             self,
             page_number: int,
             page_link: str,
-    ):
+    ) -> str:
         page_link_number = [
                m.span() for m in re.finditer(r"\d*\d", page_link)
         ]
@@ -261,7 +264,7 @@ class RisitasInfo():
     This gets the author name and the total number of pages and the title.
     """
 
-    def __init__(self, page_soup, selectors, domain):
+    def __init__(self, page_soup: BeautifulSoup, selectors, domain: str):
         self.soup = page_soup
         self.selectors = selectors
         self.domain = domain
@@ -362,6 +365,8 @@ class Posts():
         self.authors: List[str] = []
         self.domain = domain
         self.webarchive = bool(domain == Webarchive.SITE.value)
+        self.past_message = False
+        self.message_cursor = 0
 
     def _check_post_author(
             self,
@@ -575,14 +580,25 @@ class Posts():
             risitas_authors: List,
             identifiers: List,
             no_match_author: bool,
-    ) -> None:
+            append: bool,
+            message_cursor_db: int,
+    ) -> bool:
         posts = soup.select(self.selectors.MESSAGE_SELECTOR.value)
         # Counter necessary to keep the first post in risitas
         # This post usually have no identifiers and is used
         # as an intro
         if not self.authors:
             self.authors = risitas_authors
-        for post in posts:
+        self.added_message = False
+        for message_cursor, post in enumerate(posts):
+            # We go to the last page recorded in the db
+            # And we skip the messages according to the cursor
+            # position in the database
+            if append and not self.past_message:
+                if message_cursor <= message_cursor_db:
+                    continue
+                else:
+                    self.past_message = True
             is_author = self._check_post_author(post, no_match_author)
             risitas_html = post.select_one(
                 self.selectors.RISITAS_TEXT_SELECTOR.value
@@ -636,9 +652,11 @@ class Posts():
                 self.duplicates += 1
                 continue
             self._print_chapter_added(risitas_html)
+            self.added_message = True
             self.risitas_html.append((risitas_html, contains_image))
             self.risitas_raw_text.append(risitas_html.text)
             self.count += 1
+            self.message_cursor = message_cursor
 
 
 def main() -> None:
@@ -657,6 +675,11 @@ def main() -> None:
     identifiers = args.identifiers
     no_match_author = args.no_match_author
     no_resize_images = args.no_resize_images
+    clear_database = args.clear_database
+    no_database = args.no_database
+    if clear_database:
+        delete_db()
+        sys.exit()
     make_dirs(output_dir)
     if args.debug:
         STDOUT_HANDLER.setLevel(logging.DEBUG)
@@ -666,6 +689,8 @@ def main() -> None:
         for link in page_links:
             # This part is just used to get the risitas info
             domain = get_domain(link)
+            if domain == Webarchive.SITE.value:
+                no_database = True
             selectors = get_selectors_and_site(link)
             page_number: int = 1
             page_downloader = PageDownloader(domain)
@@ -682,9 +707,24 @@ def main() -> None:
                 all_messages,
                 no_resize_images,
             )
-            # Here we start downloading the messages
-            # according to the pages number
-            for _ in range(risitas_info.pages_number):
+            total_pages = risitas_info.total_pages
+            if not no_database:
+                row = read_db(link)
+                if row[0]:
+                    page_number = 0
+                    # +1 to evaluate the page itself
+                    total_pages = risitas_info.total_pages - row[0][6] + 1
+            for page in range(total_pages):
+                append = False
+                message_cursor_db = 0
+                if not no_database:
+                    if row[0]:
+                        if not page_number:
+                            page_number = row[0][6]
+                        append = True
+                        message_cursor_db = row[0][7]
+                    else:
+                        message_cursor_db = 0
                 soup = page_downloader.download_topic_page(
                     link, page_number
                 )
@@ -696,8 +736,17 @@ def main() -> None:
                     authors,
                     identifiers,
                     no_match_author,
+                    append,
+                    message_cursor_db
                 )
                 page_number += 1
+                if posts.message_cursor and page + 1 == total_pages and posts.added_message:
+                    message_cursor = posts.message_cursor
+                else:
+                    message_cursor = 0
+            if not posts.risitas_html and not no_database:
+                logging.info("There is no new chapters available!")
+                continue
             logging.info(
                 "The number of posts downloaded for "
                 f"{risitas_info.title} "
@@ -717,12 +766,26 @@ def main() -> None:
                 )
             if domain == Webarchive.SITE.value:
                 risitas_html = replace_youtube_frames(risitas_html)
-            write_html(
-                risitas_info.title,
-                risitas_info.author,
-                risitas_html,
-                output_dir,
-            )
+            if append and not no_database:
+                file_path = pathlib.Path(row[0][4])
+                append_html(file_path, risitas_html)
+            else:
+                file_path = write_html(
+                    risitas_info.title,
+                    risitas_info.author,
+                    risitas_html,
+                    output_dir,
+                )
+            if not no_database:
+                update_db(
+                    domain,
+                    risitas_info.title,
+                    link,
+                    file_path,
+                    risitas_info.total_pages,
+                    risitas_info.total_pages,
+                    message_cursor,
+                    authors,
+                )
     if not args.no_pdf:
         create_pdfs(output_dir)
-
