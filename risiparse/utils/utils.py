@@ -67,10 +67,10 @@ def append_html(html_path: 'pathlib.Path', risitas_html: 'BeautifulSoup'):
     with open(html_path, encoding='utf-8') as f:
         soup = BeautifulSoup(f, features="lxml")
     for new_chapter in risitas_html:
-        soup.select("div")[-1].append(new_chapter[0])
-        logging.debug(f"Appending new_chapter[0]...")
+        soup.body.insert(len(soup.body.contents), new_chapter[0])
+        logging.debug(f"Appending {new_chapter[0]} ...")
     with open(html_path, "w", encoding='utf-8') as f:
-        f.write(soup.decode())
+        f.write(soup.decode().replace("’", "'"))
     logging.info(f"The chapters have been appended to {html_path}")
 
 
