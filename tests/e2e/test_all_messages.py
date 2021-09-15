@@ -21,7 +21,8 @@ def test_all_messages(monkeypatch, tmp_path, caplog, test_link):
         "-o", f"{tmpdir}",
         "-l" , test_link,
         "--no-pdf",
-        "--all-messages"
+        "--all-messages",
+        "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()

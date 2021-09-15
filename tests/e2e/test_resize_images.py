@@ -23,7 +23,8 @@ def test_resize_images(monkeypatch, tmp_path, caplog, test_link):
         "-o", f"{tmpdir}",
         "-l" , test_link,
         "--no-pdf",
-        "--download-images"
+        "--download-images",
+        "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()

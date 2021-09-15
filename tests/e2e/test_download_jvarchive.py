@@ -23,6 +23,7 @@ def test_download_jvarchive(monkeypatch, tmp_path, caplog, test_link, expected_a
         "-o", f"{tmpdir}",
         "-l" , test_link,
         "--no-pdf",
+        "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()

@@ -23,6 +23,7 @@ def test_download_jvc(monkeypatch, tmp_path, caplog, test_link, expected_author)
         "-o", f"{tmpdir}",
         "-l" , test_link,
         "--no-pdf",
+        "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()

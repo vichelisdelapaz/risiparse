@@ -23,6 +23,7 @@ def test_download_webarchive(monkeypatch, tmp_path, caplog, test_link, expected_
         "-o", f"{tmpdir}",
         "-l" , test_link,
         "--no-pdf",
+        "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()

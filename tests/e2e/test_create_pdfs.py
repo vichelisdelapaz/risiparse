@@ -20,6 +20,7 @@ def test_authors(monkeypatch, tmp_path, caplog, test_link):
         f"{SCRIPT}",
         "-o", f"{tmpdir}",
         "-l" , test_link,
+        "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     with pytest.raises(SystemExit) as pytest_wrapped_e:

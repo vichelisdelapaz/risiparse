@@ -21,7 +21,8 @@ def test_authors(monkeypatch, tmp_path, caplog, test_link):
         "-o", f"{tmpdir}",
         "-l" , test_link,
         "--no-pdf",
-        "--authors", "ProlEtendard"
+        "--authors", "ProlEtendard",
+        "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()
