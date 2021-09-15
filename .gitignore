@@ -9,3 +9,4 @@
 /.pypirc
 /risitas-list/
 /risiparse.db
+/*.log
