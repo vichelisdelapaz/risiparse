@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: risiparse
-Version: 1.3.0
+Version: 1.3.1
 Summary: A script to download risitas
 Home-page: https://github.com/vichelisdelapaz/risiparse
 Author: Vichelis
@@ -60,38 +60,52 @@ Voir https://github.com/vichelisdelapaz/risicompare
 
 ```
 kenny $ risiparse -h
-usage: risiparse.py [-h] [--all-messages] [--no-pdf] [--debug] [--no-download] [-l LINKS [LINKS ...]] [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
-                    [--no-resize-images] [--download-images] [--no-match-author] [-o OUTPUT_DIR]
+usage: risiparse [-h] [--all-messages] [--no-pdf] [--debug] [--no-download]
+                 [-l LINKS [LINKS ...]] [--create-pdfs CREATE_PDFS [CREATE_PDFS ...]]
+                 [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
+                 [--no-resize-images] [--download-images] [--no-match-author]
+                 [--clear-database] [--no-database] [-o OUTPUT_DIR]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --all-messages        Download all the messages from the author. Default : False
-  --no-pdf              Default : False
+  --all-messages        Download all the messages from the author.Default : False
+  --no-pdf              Default : False, only download html
   --debug               Verbose output, Default : False
-  --no-download         Default : False
+  --no-download         Default : False, Create pdfs directly from current dir or one
+                        specified by -o
   -l LINKS [LINKS ...], --links LINKS [LINKS ...]
-                        The links file, or links from standard input. Default : current dir/risitas-links
+                        The links file, or links from standard input, Default : current
+                        dir/risitas-links
+  --create-pdfs CREATE_PDFS [CREATE_PDFS ...]
+                        A list of html file path to create pdfs from. If this option is not
+                        specified with --no-download the pdfs will be created for all html
+                        files in risitas-html
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script, example: a message that has the keyword 'hors-sujet', by adding 'hors-sujet' with this option,the
-                        script will match the message that has this keyword. Default : chapitre
+                        Give a list of words that are going to be matched by the script,
+                        example: a message that has the keyword 'hors-sujet', by adding
+                        'hors-sujet' with this option, the script will match the message that
+                        has this keyword. Default : 'chapitre'
   --authors AUTHORS [AUTHORS ...]
-                        List of authors to be matched, by default the author of the first post author is considered as the author throughout the whole risitas Default : Empty
-  --no-resize-images    When the script 'thinks' that the post contains imagesand that they are chapters posted in screenshot, it will try to display them to their full width Default : False
-  --download-images     Whether to download images locally. If set, this will change all img[src] link to point to the local images Default : False
-  --no-match-author     If the name of the author is pogo and the current post author is pogo111, it will be downloaded, this disables this feature Default : False
+                        List of authors to be matched, by default the author of the first
+                        post author is considered as the author throughout the whole risitas,
+                        Default : Empty
+  --no-resize-images    When the script 'thinks' that the post contains images and that they
+                        are chapters posted in screenshot, it will try to display them to
+                        their full width, Default : False
+  --download-images     Whether to download images locally If set, this will change all
+                        img[src] link to point to the local images Also this will try to
+                        download risitas sticker on webarchive if they have been 404ed,
+                        Default : False
+  --no-match-author     If the name of the author is pogo and the current post author is
+                        pogo111, it will be downloaded this disables this feature, Default :
+                        False
+  --clear-database      If set, will remove the database, Default : False
+  --no-database         If set, this will download a new html file instead of appending to an
+                        existing one and not modify records in the database, Default : False
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         Output dir, Default is current dir
 ```
 
-Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les messages dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
-
-En l'état actuel le script ne copie pas les messages au fur et à mesure, c'est à dire que si vous relancez le téléchargement d'un même risitas
-il va retélécharger tous les messages.
-Et si par exemple un message a été 410 entre 2 téléchargements, il faudrait juste copier l'html du message manquant à la main dans le
-fichier html que vous venez de télécharger.
-
-Aussi si il y'a des images qui ont été 404ed, le script essaiera de trouver une version de l'image
-sur webarchive, à activer avec --download-images
 
 Cas d'utilisation typique:
 
@@ -126,10 +140,23 @@ La hiérarchie suivante sera créée
     └── turkissou9-un-celestin-a-istanbul-0.pdf
 ```
 
+Si vous relancez la commande le script va directement aller à la dernière page du risitas et vérifier
+si il y'a de nouveaux chapitres, le nombre de page, la position du message de l'auteur est gardé 
+dans une base de données.
+
+Ce qui veut dire qu'il est possible d'automatiser le script avec un cronjob/script pour le lancer
+à une intervalle précise.
+
+```
+risiparse -l risitas-links -o ~/tmp
+```
+
 Ne pas oublier de mettre l'option `--debug` si rien n'a l'air de se passer pour avoir les détails.
 
 Enfin download-images s'assure que les images soit téléchargés, ce qui est utile pour risicompare et aussi
 pour télécharger les sticker sur webarchive lorsque ceux-ci ont été 404ed.
+
+Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les messages dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
 
 Télécharger les risitas à partir de répertoire courant/risitas-links, dans rep courant/risitas-html puis convertir dans rep courant/risitas-pdf, les images susceptibles d'être des chapitres seront agrandis.
 
@@ -137,10 +164,18 @@ Télécharger les risitas à partir de répertoire courant/risitas-links, dans r
 risiparse
 ```
 
-Télécharger tous les messages de l'auteur
+Télécharger tous les messages de l'auteur, utile si l'approche automatique en a manqué certains
+voir risicompare.
 
 ```
 risiparse --all-messages
+```
+
+Ne pas télécharger les risitas, créer des pdfs depuis des fichiers htmls donnés en input, avec -o
+foo, les pdfs seront créés dans foo/risitas-pdf/risitas1...
+
+```
+risiparse  --no-download -o <foo> --create-pdfs <html_file_path1>,<html_file_path2>, ... <html_file_pathN>
 ```
 
 Ne pas télécharger les risitas, créer des pdfs depuis un répertoire contenant risitas-html
@@ -168,11 +203,38 @@ peut aussi inclure un regexp. Voir les regexp de python
 risiparse -i "chapitre" "partie" "chapitre \d"
 ```
 
-Télécharger les images localement et les utiliser dans l'html, utile dans le future
-si j'ai le temps de développer un GUI
+Télécharger les risitas avec une liste d'auteurs fournis, utile si l'auteur utilise des comptes
+différents
 
 ```
-risiparse --download-images
+risiparse -l <link1> --no-pdf --authors Example1 Example2
+```
+
+Télécharger les images localement et les utiliser dans l'html, utile pour risicompare
+et télécharger les images sur wayback machine si ils ont été 404ed, ce qui est surtout
+utile pour les vieux risitas.
+
+```
+risiparse --download-images --no-pdf
+```
+
+Télécharger les risitas sans utiliser la base de données
+
+```
+risiparse --no-database
+```
+
+En cas de problème avec la base de données, après si y'a un problème autre va falloir
+plonger les mains dans le cambouis et utiliser sqlite3 pour éditer à la main.
+
+```
+risiparse --clear-database
+```
+
+## Tests
+
+```
+tox
 ```
 
 
