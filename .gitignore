@@ -1,4 +1,4 @@
-/*/__pycache__/
+/**/__pycache__/
 /__pycache__/
 /risitas-pdf/
 /risitas-html/
@@ -7,3 +7,5 @@
 /build/
 /risiparse.spec
 /.pypirc
+/risitas-list/
+/risiparse.db
