@@ -678,6 +678,7 @@ def main() -> None:
     clear_database = args.clear_database
     no_database = args.no_database
     create_pdfs_user = args.create_pdfs
+    no_download = args.no_download
     htmls_file_path = None
     if clear_database:
         delete_db()
@@ -686,7 +687,7 @@ def main() -> None:
     if args.debug:
         STDOUT_HANDLER.setLevel(logging.DEBUG)
         FILE_HANDLER.setLevel(logging.DEBUG)
-    if not args.no_download:
+    if not no_download:
         page_links = parse_input_links(args.links)
         htmls_file_path = []
         for link in page_links:
@@ -797,4 +798,4 @@ def main() -> None:
                     authors,
                 )
     if not args.no_pdf:
-        create_pdfs(output_dir, create_pdfs_user, htmls_file_path)
+        create_pdfs(output_dir, create_pdfs_user, htmls_file_path, no_download)

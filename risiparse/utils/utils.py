@@ -144,9 +144,11 @@ def create_pdfs(
         output_dir: 'pathlib.Path',
         html_user: List['pathlib.Path'] = None,
         html_download: List['pathlib.Path'] = None,
+        all_pdfs = False,
 ) -> None:
     html_folder_path = output_dir / "risitas-html"
-    if not html_user and not html_download:
+    htmls = []
+    if not html_user and not html_download and all_pdfs:
         htmls = list(html_folder_path.glob("*.html"))
     elif html_user:
         htmls = html_user
