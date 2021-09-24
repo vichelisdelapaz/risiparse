@@ -163,8 +163,8 @@ def create_pdfs(
     for html in htmls:
         if html.stat().st_size >= 3670016:
             logging.info(
-                f"The html file {html} is too big and will be splitted "
-                "then pdfs will be created and merged back into one single pdf"
+                f"The html file {html} is too big and will be splitted into multiple parts, "
+                "then pdfs will be created and merged back into one single pdf."
             )
             data = BeautifulSoup(
                 html.read_text(encoding='utf-8'), features="lxml"
@@ -190,8 +190,8 @@ def create_pdfs(
                 end += 50
                 file_path = pathlib.Path(f"{html}-part-{start}-to-{end}.html")
             htmls.remove(html)
+    app = html_to_pdf.QtWidgets.QApplication([])
     if htmls:
-        app = html_to_pdf.QtWidgets.QApplication([])
         page = html_to_pdf.PdfPage(output_dir)
         logging.info("Creating pdfs...")
         page.convert(htmls)
