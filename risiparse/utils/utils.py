@@ -3,6 +3,7 @@
 """This module just regroup some routines"""
 
 from typing import List, Union
+import tempfile
 import unicodedata
 import pathlib
 import re
@@ -11,6 +12,7 @@ import argparse
 import logging
 
 from urllib.parse import urlparse
+from PyPDF2 import PdfFileMerger, PdfFileReader
 from bs4 import BeautifulSoup
 from risiparse import html_to_pdf, sites_selectors
 
@@ -148,18 +150,64 @@ def create_pdfs(
 ) -> None:
     html_folder_path = output_dir / "risitas-html"
     htmls = []
+    pdf_to_create = dict()
     if not html_user and not html_download and all_pdfs:
         htmls = list(html_folder_path.glob("*.html"))
     elif html_user:
         htmls = html_user
     elif html_download:
         htmls = html_download
+    # Testing if htmls are too big
+    html_part_tmpdir = tempfile.TemporaryDirectory()
+    (pathlib.Path(f"{html_part_tmpdir.name}") / "risitas-pdf").mkdir()
+    for html in htmls:
+        if html.stat().st_size >= 3670016:
+            logging.info(
+                f"The html file {html} is too big and needs to be splitted!"
+            )
+            data = BeautifulSoup(
+                html.read_text(encoding='utf-8'), features="lxml"
+            )
+            divs = data.select("div")
+            start = 0
+            end = 50
+            for _ in range(0, len(divs), 50):
+                file_path = pathlib.Path(
+                    f"{html_part_tmpdir.name}/{html.name}"
+                    f"-part-{start}-to-{end}.html"
+                )
+                with open(file_path, "w", encoding='utf-8') as f:
+                    for count, div in enumerate(divs[start:end], 1):
+                        f.write(div.decode())
+                        logging.debug(f"Appended div to {file_path}")
+                pdf_path = str(html).replace("html", "pdf")
+                if pdf_path not in pdf_to_create:
+                    pdf_to_create[pdf_path] = [file_path]
+                else:
+                    pdf_to_create[pdf_path].append(file_path)
+                start = end
+                end += 50
+                file_path = pathlib.Path(f"{html}-part-{start}-to-{end}.html")
+            htmls.remove(html)
     if htmls:
         app = html_to_pdf.QtWidgets.QApplication([])
         page = html_to_pdf.PdfPage(output_dir)
         logging.info("Creating pdfs...")
         page.convert(htmls)
-        sys.exit(app.exec_())
+        app.exec()
+    if pdf_to_create:
+        for k, v in pdf_to_create.items():
+            merger = PdfFileMerger()
+            output_dir = pathlib.Path(f"{html_part_tmpdir.name}")
+            page = html_to_pdf.PdfPage(output_dir)
+            page.convert(v)
+            app.exec()
+            pdfs_to_merge = page.get_pdfs_path()
+            for filename in pdfs_to_merge:
+                merger.append(filename)
+            with open(f"{k}", 'wb') as f:
+                merger.write(f)
+                logging.info(f"Merged pdf parts into {k}")
 
 
 def read_links(links_file: pathlib.Path) -> List:

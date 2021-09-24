@@ -17,6 +17,7 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
         self.output_dir = output_dir
 
         self.pdf_folder_path = output_dir / "risitas-pdf"
+        self.pdf_files = []
 
         self.settings = (
             QtWebEngineWidgets.QWebEngineSettings.globalSettings()
@@ -36,6 +37,9 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
         self._htmls = iter(htmls)
         self._fetchNext()
 
+    def get_pdfs_path(self):
+        return self.pdf_files
+
     def _fetchNext(self):
         try:
             self.current_file = next(self._htmls)
@@ -47,9 +51,13 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
     def _handleLoadFinished(self):
         pdf_file = self.current_file.name[:-5] + ".pdf"
         output_file = str(self.pdf_folder_path) + os.sep + pdf_file
+        self.pdf_files.append(output_file)
         self.printToPdf(output_file, pageLayout=self.layout)
         logging.info(f"Creating {output_file}")
 
-    def _handlePrintingFinished(self):
+    def _handlePrintingFinished(self, file, bol):
+        logging.info(f"Created {file}")
+        if file not in self.pdf_files:
+            self.pdf_files.append(file)
         if not self._fetchNext():
             QtWidgets.QApplication.quit()
