@@ -163,7 +163,7 @@ def create_pdfs(
     for html in htmls:
         if html.stat().st_size >= 3670016:
             logging.info(
-                f"The html file {html} is too big and will be splitted"
+                f"The html file {html} is too big and will be splitted "
                 "then pdfs will be created and merged back into one single pdf"
             )
             data = BeautifulSoup(
