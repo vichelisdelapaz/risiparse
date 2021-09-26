@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: risiparse
-Version: 1.4.4
+Version: 1.4.5
 Summary: A script to download risitas
 Home-page: https://github.com/vichelisdelapaz/risiparse
 Author: Vichelis
@@ -157,6 +157,19 @@ Enfin download-images s'assure que les images soit téléchargés, ce qui est ut
 pour télécharger les sticker sur webarchive lorsque ceux-ci ont été 404ed.
 
 Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les messages dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
+
+## Bugs connus
+
+Lors de la création de pdfs, le script peut se bloquer indéfiniment et le seul moyen de reprendre le contrôle
+est de le tuer via le gestionnaire de tâches (penser à quitter le terminal si SIGKILL ne marche pas)
+d'ou ça vient? De Qt la page se charge à 80% et ne progresse plus pour une raison que j'ignore
+et je ne vais pas implémenter un hack, la vrai solution c'est de regarder dans le code de Qt/chromium.
+
+Vu que ce bug arrive 1 fois sur 10 ça devrait pas trop poser de problème dans la pratique, pour une utilisation
+du script avec cron/gestionnaire de tâches il faudra juste spécifier --no-pdf et après surveiller lors de la création des pdfs si il
+y'a un problème ou alors utiliser pandoc ou autre solution.
+
+## Autres examples
 
 Télécharger les risitas à partir de répertoire courant/risitas-links, dans rep courant/risitas-html puis convertir dans rep courant/risitas-pdf, les images susceptibles d'être des chapitres seront agrandis.
 
