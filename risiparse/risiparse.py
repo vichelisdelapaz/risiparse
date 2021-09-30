@@ -596,6 +596,8 @@ class Posts():
             # position in the database
             if append and not self.past_message:
                 if message_cursor <= message_cursor_db:
+                    if message_cursor == 19:
+                        self.past_message = True
                     continue
                 else:
                     self.past_message = True
