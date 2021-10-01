@@ -171,8 +171,8 @@ def create_pdfs(
             )
             divs = data.select("div")
             start = 0
-            end = 50
-            for _ in range(0, len(divs), 50):
+            end = 30
+            for _ in range(0, len(divs), 30):
                 file_path = pathlib.Path(
                     f"{html_part_tmpdir.name}/{html.name}"
                     f"-part-{start}-to-{end}.html"
@@ -187,7 +187,7 @@ def create_pdfs(
                 else:
                     pdf_to_create[pdf_path].append(file_path)
                 start = end
-                end += 50
+                end += 30
                 file_path = pathlib.Path(f"{html}-part-{start}-to-{end}.html")
             htmls.remove(html)
     app = html_to_pdf.QtWidgets.QApplication([])
