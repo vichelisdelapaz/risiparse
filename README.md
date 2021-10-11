@@ -141,6 +141,8 @@ Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblan
 
 ## Bugs connus
 
+*Ca à l'air d'être règlé après avoir passé sur le webengine de pyside6 sortie fin septembre*
+
 Lors de la création de pdfs, le script peut se bloquer indéfiniment et le seul moyen de reprendre le contrôle
 est de le tuer via le gestionnaire de tâches (penser à quitter le terminal si SIGKILL ne marche pas)
 d'ou ça vient? De Qt la page se charge à 80% et ne progresse plus pour une raison que j'ignore

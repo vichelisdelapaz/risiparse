@@ -5,12 +5,13 @@
 import os
 import logging
 
-from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5 import QtWidgets, QtWebEngineWidgets
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QPageLayout, QPageSize
+from PySide6 import QtWidgets
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 
 
-class PdfPage(QtWebEngineWidgets.QWebEnginePage):
+class PdfPage(QWebEnginePage):
     def __init__(self, output_dir):
         super().__init__()
         self._htmls = []
@@ -19,11 +20,8 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
         self.pdf_folder_path = output_dir / "risitas-pdf"
         self.pdf_files = []
 
-        self.settings = (
-            QtWebEngineWidgets.QWebEngineSettings.globalSettings()
-        )
-        self.settings.setAttribute(
-            QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, False
+        self.settings().setAttribute(
+            QWebEngineSettings.JavascriptEnabled, False
         )
 
         self.setZoomFactor(1)
@@ -52,7 +50,7 @@ class PdfPage(QtWebEngineWidgets.QWebEnginePage):
         pdf_file = self.current_file.name[:-5] + ".pdf"
         output_file = str(self.pdf_folder_path) + os.sep + pdf_file
         self.pdf_files.append(output_file)
-        self.printToPdf(output_file, pageLayout=self.layout)
+        self.printToPdf(output_file, layout=self.layout)
         logging.info(f"Creating {output_file}")
 
     def _handlePrintingFinished(self, file, bol):
