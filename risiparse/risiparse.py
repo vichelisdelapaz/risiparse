@@ -57,6 +57,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         super().__init__(*args, **kwargs)
 
     def send(self, request, **kwargs):
+        """Replace the default timeout with our own"""
         timeout = kwargs.get("timeout")
         if timeout is None:
             kwargs["timeout"] = self.timeout
@@ -83,6 +84,7 @@ class PageDownloader():
             page_link: str,
             page_number: int = 1,
     ) -> Optional['BeautifulSoup']:
+        """Download the soup of the current page"""
         if not self.webarchive:
             page_link = self._get_page_link(
                 page_number,
@@ -95,14 +97,14 @@ class PageDownloader():
             )
             if webarchive_link:
                 page_link = webarchive_link
-        logging.info(f"Going to page {page_link}")
+        logging.info("Going to page %s", page_link)
         try:
             page = self.http.get(page_link)
-        except requests.exceptions.RetryError as e:
-            logging.exception(e)
+        except requests.exceptions.RetryError as retry_error:
+            logging.exception(retry_error)
             logging.error(
-                f"The retries for {page_link} have failed, "
-                f"being rate limited/server overloaded"
+                "The retries for %s have failed, "
+                "being rate limited/server overloaded", page_link
             )
             return None
         page_status = page.status_code
@@ -113,14 +115,15 @@ class PageDownloader():
             )
         if self.webarchive and page_status == 404:
             logging.error(
-                f"The Wayback Machine has not archived "
-                f"{page_link}"
+                "The Wayback Machine has not archived "
+                "%s", page_link
             )
             return None
         soup = BeautifulSoup(page.content, features="lxml")
         return soup
 
     def download_img_page(self, page_link: str) -> str:
+        """Get the full scale image link"""
         page = self.http.get(page_link)
         soup = BeautifulSoup(page.content, features="lxml")
         img_link = soup.select_one(
@@ -181,10 +184,11 @@ class PageDownloader():
             self,
             link: str,
     ) -> Optional['requests.models.Response']:
+        """Get the image from webarchive."""
         logging.error(
-            f"The image at {link} "
+            "The image at %s "
             "has been 404ed! Trying on "
-            "webarchive..."
+            "webarchive...", link
         )
         user_agent = (
             "Mozilla/5.0 (Windows NT 5.1; rv:40.0) "
@@ -196,14 +200,14 @@ class PageDownloader():
             oldest_archive_url = oldest_archive.archive_url
             image = self.http.get(oldest_archive_url)
             status_code = image.status_code
-        except waybackpy.exceptions.WaybackError as e:
-            logging.exception(e)
+        except waybackpy.exceptions.WaybackError as wayback_error:
+            logging.exception(wayback_error)
             return None
         if status_code != 200:
             logging.error(
-                f"The image at {oldest_archive_url} "
+                "The image at %s "
                 "on the oldest archive could "
-                "not been downloaded"
+                "not been downloaded", oldest_archive_url
             )
             return None
         return image
@@ -212,6 +216,9 @@ class PageDownloader():
             self,
             img: BeautifulSoup
     ) -> str:
+        """Strip the redundant part in the webarchive link
+           to get a clean url
+        """
         archive_link = img.attrs["src"]
         contains_webarchive_link = contains_webarchive(
             archive_link
@@ -227,6 +234,7 @@ class PageDownloader():
             soup: BeautifulSoup,
             output_dir: pathlib.Path,
     ) -> None:
+        """Download all the images and stores them."""
         img_folder_path = output_dir / "risitas-html" / "images"
         img_folder_path.mkdir(exist_ok=True)
         for page in soup:
@@ -240,14 +248,14 @@ class PageDownloader():
                 if not self._image_exists(file_name, img_folder_path):
                     logging.info(
                         "Image not in cache, downloading "
-                        f"{file_name}"
+                        "%s", file_name
                     )
                     try:
                         image = self.http.get(link)
                         status_code = image.status_code
                     # Connection refused or others errors.
-                    except requests.exceptions.ConnectionError as e:
-                        logging.exception(e)
+                    except requests.exceptions.ConnectionError as con_error:
+                        logging.exception(con_error)
                         continue
                     if status_code == 404:
                         image = self.get_webarchive_img(link)
@@ -273,6 +281,7 @@ class RisitasInfo():
         self.title = self.get_title(self.soup)
 
     def get_author_name(self, soup: BeautifulSoup) -> str:
+        """Get the author name"""
         if self.domain == "jeuxvideo.com":
             author = soup.select_one(
                 self.selectors.DELETED_AUTHOR_SELECTOR.value
@@ -289,21 +298,22 @@ class RisitasInfo():
             author = soup.select_one(
                 self.selectors.AUTHOR_SELECTOR.value
             ).text.strip()
-        except AttributeError as e:
+        except AttributeError as author_not_found:
             author = "unknown"
-            logging.exception(e)
+            logging.exception(author_not_found)
             logging.error(
                 "Can't get the risitas "
-                f"author, set author to '{author}'"
+                "author, set author to '%s'", author
             )
         if not author and self.domain == Webarchive.SITE.value:
             author = "Pseudo supprimé"
         logging.info(
-            f"The risitas author is : {author}"
+            "The risitas author is : %s", author
         )
         return author
 
     def get_total_pages(self, soup: BeautifulSoup) -> int:
+        """Get the number of pages to parse"""
         try:
             topic_symbol = soup.select_one(
                 self.selectors.TOTAL_SELECTOR.value
@@ -326,12 +336,13 @@ class RisitasInfo():
         return topic_pages
 
     def get_title(self, soup: BeautifulSoup) -> str:
+        """Get the title of the risitas"""
         try:
             title = soup.select_one(
                 self.selectors.TITLE_SELECTOR.value
             ).text.strip()
-        except AttributeError as e:
-            logging.exception(e)
+        except AttributeError as title_not_found:
+            logging.exception(title_not_found)
             logging.error(
                 "Can't get the title "
                 "author, setting the title to "
@@ -389,9 +400,9 @@ class Posts():
                 return False
         logging.debug(
             "The current author is "
-            "{post_author} "
+            "%s "
             "and the risitas author is "
-            "{self.authors}"
+            "%s", post_author, self.authors
         )
         if not no_match_author:
             for author in self.authors:
@@ -403,8 +414,8 @@ class Posts():
     def _check_post_length(self, post: BeautifulSoup) -> bool:
         """Check the post length to see if this is a chapter
         or an offtopic message"""
-        p = post.text.strip().replace("\n", "")
-        return bool(len(p) < 1000)
+        paragraph = post.text.strip().replace("\n", "")
+        return bool(len(paragraph) < 1000)
 
     def _check_post_identifiers(
             self,
@@ -415,9 +426,9 @@ class Posts():
         regexp = re.compile(identifiers_joined, re.IGNORECASE)
         try:
             post_paragraph_text = post.select_one("p").text[0:200]
-        except AttributeError as e:
+        except AttributeError as text_error:
             logging.exception(
-                f"The post doesn't contains text, probably some image {e}"
+                "The post doesn't contains text, probably some image %s", text_error
             )
             return False
         contains_identifiers = regexp.search(post_paragraph_text)
@@ -455,8 +466,8 @@ class Posts():
         ret_val = False
         paragraphs = soup.select("p")
         if not paragraphs and self.domain == Jvarchive.SITE.value:
-            a = soup.select("a")
-            if a:
+            link = soup.select("a")
+            if link:
                 return True
         # Need to check alt startswith https
         for paragraph in paragraphs:
@@ -495,10 +506,10 @@ class Posts():
                 try:
                     img.attrs.pop(remove_attr)
                     logging.info(
-                        f"Displaying {img.attrs['src']} at full scale!"
+                        "Displaying %s at full scale!", img.attrs["src"]
                     )
-                except KeyError as e:
-                    logging.exception(f"This is a jvc smiley! {e}")
+                except KeyError as missing_attribute:
+                    logging.exception("This is a jvc smiley! %s", missing_attribute)
         if self.domain == Jvc.SITE.value:
             for img in imgs:
                 if re.search("fichiers", img.attrs["alt"]):
@@ -530,12 +541,12 @@ class Posts():
             else:
                 logging.info(
                     "Adding "
-                    f"{pretty_print}"
+                    "%s", pretty_print
                 )
-        except AttributeError as e:
+        except AttributeError as jvarchive_image:
             logging.exception(
-                f"Can't log text because this "
-                f"is an image from jvarchive {e}"
+                "Can't log text because this "
+                "is an image from jvarchive %s", jvarchive_image
             )
 
     def _get_webarchive_post_html(
@@ -574,6 +585,9 @@ class Posts():
             pass
         return risitas_html
 
+    def _check_post_conditions(self) -> bool:
+        pass
+
     def get_posts(
             self,
             soup: BeautifulSoup,
@@ -599,8 +613,6 @@ class Posts():
                     if message_cursor == 19:
                         self.past_message = True
                     continue
-                else:
-                    self.past_message = True
             is_author = self._check_post_author(post, no_match_author)
             risitas_html = post.select_one(
                 self.selectors.RISITAS_TEXT_SELECTOR.value
@@ -644,11 +656,12 @@ class Posts():
                 contains_image
             )
             if is_duplicate:
+                first_lines = risitas_html.select_one('p').text[0:50].strip()
                 logging.info(
                     (
                         "The current post "
-                        f"{risitas_html.select_one('p').text[0:50].strip()}"
-                        "is a duplicate!"
+                        "%s"
+                        "is a duplicate!", first_lines
                     )
                 )
                 self.duplicates += 1
@@ -759,15 +772,15 @@ def main() -> None:
                 continue
             logging.info(
                 "The number of posts downloaded for "
-                f"{risitas_info.title} "
-                f"is : {posts.count}"
+                "%s "
+                "is : %d", risitas_info.title, posts.count
             )
             risitas_html = posts.risitas_html
             if not all_messages:
                 logging.info(
                     "The number of duplicates for "
-                    f"{risitas_info.title} "
-                    f"is : {posts.duplicates}"
+                    "%s "
+                    "is : %d", risitas_info.title, posts.duplicates
                 )
             if download_images:
                 page_downloader.download_images(

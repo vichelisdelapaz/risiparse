@@ -60,7 +60,7 @@ def write_html(
             </html>"""
         )
         f.write(html)
-        logging.info(f"Wrote {html_path}")
+        logging.info("Wrote %s", html_path)
     return html_path
 
 
@@ -69,10 +69,10 @@ def append_html(html_path: 'pathlib.Path', risitas_html: 'BeautifulSoup'):
         soup = BeautifulSoup(f, features="lxml")
     for new_chapter in risitas_html:
         soup.body.insert(len(soup.body.contents), new_chapter[0])
-        logging.debug(f"Appending {new_chapter[0]} ...")
+        logging.debug("Appending %s ...", new_chapter[0])
     with open(html_path, "w", encoding='utf-8') as f:
         f.write(soup.decode().replace("’", "'"))
-    logging.info(f"The chapters have been appended to {html_path}")
+    logging.info("The chapters have been appended to %s", html_path)
 
 
 def _remove_risitas(title: str) -> str:
@@ -162,9 +162,9 @@ def create_pdfs(
     for html in htmls:
         if html.stat().st_size >= 3670016:
             logging.info(
-                f"The html file {html} is too big and will be splitted "
+                "The html file %s is too big and will be splitted "
                 "into multiple parts, then pdfs will be created and "
-                "merged back into one single pdf."
+                "merged back into one single pdf.", html
             )
             data = BeautifulSoup(
                 html.read_text(encoding='utf-8'), features="lxml"
@@ -180,7 +180,7 @@ def create_pdfs(
                 with open(file_path, "w", encoding='utf-8') as f:
                     for count, div in enumerate(divs[start:end], 1):
                         f.write(div.decode())
-                        logging.debug(f"Appended div to {file_path}")
+                        logging.debug("Appended div to %s", file_path)
                 pdf_path = str(html).replace("html", "pdf")
                 if pdf_path not in pdf_to_create:
                     pdf_to_create[pdf_path] = [file_path]
@@ -208,7 +208,7 @@ def create_pdfs(
                 merger.append(filename)
             with open(f"{k}", 'wb') as f:
                 merger.write(f)
-                logging.info(f"Merged pdf parts into {k}")
+                logging.info("Merged pdf parts into %s", k)
 
 
 def read_links(links_file: pathlib.Path) -> List:

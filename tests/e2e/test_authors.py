@@ -26,5 +26,5 @@ def test_authors(monkeypatch, tmp_path, caplog, test_link):
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()
-    post_numbers = int(caplog.records[-3].msg.split()[-1])
+    post_numbers = int(caplog.records[-3].getMessage().split()[-1])
     assert post_numbers == 15

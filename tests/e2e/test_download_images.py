@@ -29,7 +29,7 @@ def test_download_images(monkeypatch, tmp_path, caplog, test_link):
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()
-    output_file = caplog.records[-1].msg.split()[1]
+    output_file = caplog.records[-1].getMessage().split()[1]
     output_file_path = pathlib.Path(output_file)
     html = []
     with open(output_file_path) as f:

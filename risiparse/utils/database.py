@@ -47,8 +47,8 @@ def create_db() -> None:
                 risitas_id integer,
                 foreign key(risitas_id) references risitas(id))'''
             )
-    except sqlite3.OperationalError as e:
-        logging.exception(e)
+    except sqlite3.OperationalError as operational_error:
+        logging.exception(operational_error)
     con.close()
 
 
@@ -71,8 +71,8 @@ def read_db(page_link: str) -> List[Optional[tuple]]:
                 )
                 authors_row = cursor_author.fetchall()
                 rows.append(authors_row)
-    except sqlite3.OperationalError as e:
-        logging.exception(e)
+    except sqlite3.OperationalError as operational_error:
+        logging.exception(operational_error)
     con.close()
     return rows
 

@@ -23,11 +23,8 @@ def test_authors(monkeypatch, tmp_path, caplog, test_link):
         "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
-        main()
-    assert pytest_wrapped_e.type == SystemExit
-    assert pytest_wrapped_e.value.code == 0
-    last_message = caplog.records[-1].msg
+    main()
+    last_message = caplog.records[-1].getMessage()
     assert "Creating" in last_message
     output_file = last_message.split()[1]
     output_file_path = pathlib.Path(output_file)

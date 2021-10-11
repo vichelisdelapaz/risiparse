@@ -29,7 +29,7 @@ def test_resize_images(monkeypatch, tmp_path, caplog, test_link):
     monkeypatch.setattr(sys, 'argv', testargs)
     main()
     assert 'full scale' in caplog.text
-    output_file = caplog.records[-1].msg.split()[1]
+    output_file = caplog.records[-1].getMessage().split()[1]
     output_file_path = pathlib.Path(output_file)
     with open(output_file_path) as f:
         soup = BeautifulSoup(f, features="lxml")

@@ -27,8 +27,8 @@ def test_download_jvc(monkeypatch, tmp_path, caplog, test_link, expected_author)
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()
-    output_file = caplog.records[-1].msg.split()[1]
+    output_file = caplog.records[-1].getMessage().split()[1]
     output_file_path = pathlib.Path(output_file)
-    assert expected_author in caplog.records[-1].msg
+    assert expected_author in caplog.records[-1].getMessage()
     assert output_file_path.exists()
     assert output_file_path.stat().st_size > 300

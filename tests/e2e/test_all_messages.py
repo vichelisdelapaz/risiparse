@@ -26,5 +26,5 @@ def test_all_messages(monkeypatch, tmp_path, caplog, test_link):
     ]
     monkeypatch.setattr(sys, 'argv', testargs)
     main()
-    post_numbers = int(caplog.records[-2].msg.split()[-1])
+    post_numbers = int(caplog.records[-2].getMessage().split()[-1])
     assert post_numbers > 4
