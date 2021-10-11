@@ -12,10 +12,12 @@ from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 
 
 class PdfPage(QWebEnginePage):
+    """Produce a pdf from an html file"""
     def __init__(self, output_dir):
         super().__init__()
         self._htmls = []
         self.output_dir = output_dir
+        self.current_file = None
 
         self.pdf_folder_path = output_dir / "risitas-pdf"
         self.pdf_files = []
@@ -28,17 +30,19 @@ class PdfPage(QWebEnginePage):
         self.layout = QPageLayout()
         self.layout.setPageSize(QPageSize(QPageSize.A4))
         self.layout.setOrientation(QPageLayout.Portrait)
-        self.loadFinished.connect(self._handleLoadFinished)
-        self.pdfPrintingFinished.connect(self._handlePrintingFinished)
+        self.loadFinished.connect(self._handle_load_finished)
+        self.pdfPrintingFinished.connect(self._handle_printing_finished)
 
     def convert(self, htmls):
+        """Processing html file one by one"""
         self._htmls = iter(htmls)
-        self._fetchNext()
+        self._fetch_next()
 
     def get_pdfs_path(self):
+        """Return pdfs path"""
         return self.pdf_files
 
-    def _fetchNext(self):
+    def _fetch_next(self):
         try:
             self.current_file = next(self._htmls)
             self.load(QUrl.fromLocalFile(self.current_file.as_posix()))
@@ -46,16 +50,16 @@ class PdfPage(QWebEnginePage):
             return False
         return True
 
-    def _handleLoadFinished(self):
+    def _handle_load_finished(self):
         pdf_file = self.current_file.name[:-5] + ".pdf"
         output_file = str(self.pdf_folder_path) + os.sep + pdf_file
         self.pdf_files.append(output_file)
         self.printToPdf(output_file, layout=self.layout)
-        logging.info(f"Creating {output_file}")
+        logging.info("Creating %s", output_file)
 
-    def _handlePrintingFinished(self, file, bol):
-        logging.info(f"Created {file}")
+    def _handle_printing_finished(self, file):
+        logging.info("Created %s", file)
         if file not in self.pdf_files:
             self.pdf_files.append(file)
-        if not self._fetchNext():
+        if not self._fetch_next():
             QtWidgets.QApplication.quit()

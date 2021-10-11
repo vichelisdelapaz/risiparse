@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+"""This module contains all the database logic"""
+
 from typing import List, Optional
 import sqlite3
 import re
@@ -26,6 +28,7 @@ def _replace_page_number(page_link: str) -> str:
 
 
 def create_db() -> None:
+    """Create the database"""
     con = sqlite3.connect(DB_PATH)
     try:
         with con:
@@ -53,6 +56,7 @@ def create_db() -> None:
 
 
 def read_db(page_link: str) -> List[Optional[tuple]]:
+    """Fetch recors from the database"""
     create_db()
     con = sqlite3.connect(DB_PATH)
     page_link_normalized = _replace_page_number(page_link)
@@ -87,6 +91,7 @@ def update_db(
         message_cursor: int,
         authors: List,
 ) -> None:
+    """Updates records in the database"""
     create_db()
     # Need to handle the updates of existing rows
     file_path_str = str(file_path)
@@ -124,10 +129,15 @@ def update_db(
                     "A risitas has been updated in the database!"
                 )
                 logging.debug(
-                    f"Id: {id} "
-                    f"Title: {title} "
-                    f"Current page: {current_page} "
-                    f"Total pages : {total_pages}"
+                    "Id: %d "
+                    "Title: %s "
+                    "Current page: %d "
+                    "Total pages : %d", (
+                        cursor.lastrowid,
+                        title,
+                        current_page,
+                        total_pages,
+                    )
                 )
                 cursor_existing_row = con.execute(
                     '''select name from authors where id = ?''',
@@ -146,11 +156,11 @@ def update_db(
                             )
                         )
                         logging.debug(
-                            f"Author : {author} "
-                            "has been inserted in the database!"
+                            "Author : %s "
+                            "has been inserted in the database!", author
                         )
-        except sqlite3.OperationalError as e:
-            logging.exception(e)
+        except sqlite3.OperationalError as operational_error:
+            logging.exception(operational_error)
     else:
         try:
             with con:
@@ -178,10 +188,15 @@ def update_db(
                     "A new risitas has been inserted in the database!"
                 )
                 logging.debug(
-                    f"Id: {cursor.lastrowid} "
-                    f"Title: {title} "
-                    f"Current page: {current_page} "
-                    f"Total pages : {total_pages}"
+                    "Id: %d "
+                    "Title: %s "
+                    "Current page: %d "
+                    "Total pages : %d", (
+                        cursor.lastrowid,
+                        title,
+                        current_page,
+                        total_pages,
+                    )
                 )
                 for author in authors:
                     con.execute(
@@ -194,14 +209,15 @@ def update_db(
                         )
                     )
                     logging.debug(
-                        f"Author : {author} "
-                        "has been inserted in the database!"
+                        "Author : %s "
+                        "has been inserted in the database!", author
                     )
-        except sqlite3.OperationalError as e:
-            logging.exception(e)
+        except sqlite3.OperationalError as operational_error:
+            logging.exception(operational_error)
     con.close()
 
 
 def delete_db() -> None:
+    """Delete the database"""
     DB_PATH.unlink()
-    logging.info(f"Deleted database at {DB_PATH}")
+    logging.info("Deleted database at %s", DB_PATH)

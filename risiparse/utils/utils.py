@@ -22,6 +22,7 @@ def write_html(
         posts: List,
         output_dir: 'pathlib.Path',
 ) -> 'pathlib.Path':
+    """Produce an html file from the risitas soup"""
     title_slug = slugify(title, title=True)
     author_slug = slugify(author, title=False)
     ext = "html"
@@ -40,7 +41,7 @@ def write_html(
             "risitas-html" /
             (full_title + f".{ext}")
         )
-    with open(html_path, "w", encoding="utf-8") as f:
+    with open(html_path, "w", encoding="utf-8") as html_file:
         html = (
             """<!DOCTYPE html>
             <html lang='fr'>
@@ -52,26 +53,26 @@ def write_html(
             </head>
             <body>"""
         )
-        f.write(html)
+        html_file.write(html)
         for paragraph in posts:
-            f.write(str(paragraph[0]).replace("’", "'"))
+            html_file.write(str(paragraph[0]).replace("’", "'"))
         html = (
             """</body>
             </html>"""
         )
-        f.write(html)
+        html_file.write(html)
         logging.info("Wrote %s", html_path)
     return html_path
 
 
 def append_html(html_path: 'pathlib.Path', risitas_html: 'BeautifulSoup'):
-    with open(html_path, encoding='utf-8') as f:
-        soup = BeautifulSoup(f, features="lxml")
+    with open(html_path, encoding='utf-8') as html_file:
+        soup = BeautifulSoup(html_file, features="lxml")
     for new_chapter in risitas_html:
         soup.body.insert(len(soup.body.contents), new_chapter[0])
         logging.debug("Appending %s ...", new_chapter[0])
-    with open(html_path, "w", encoding='utf-8') as f:
-        f.write(soup.decode().replace("’", "'"))
+    with open(html_path, "w", encoding='utf-8') as html_file:
+        html_file.write(soup.decode().replace("’", "'"))
     logging.info("The chapters have been appended to %s", html_path)
 
 
@@ -90,6 +91,7 @@ def slugify(
         allow_unicode: bool = False,
         title: bool = False
 ) -> str:
+    """Slugify the html file name"""
     if title:
         string = _remove_risitas(string)
         string = _replace_whitespaces(string)
@@ -106,17 +108,20 @@ def slugify(
 
 
 def _strip_www_component(url: str) -> str:
+    """Strip www"""
     domain = re.sub(r"www.", "", url)
     return domain
 
 
 def get_domain(url: str) -> str:
+    """Get a url domain"""
     domain = url.split("/")[2]
     domain = _strip_www_component(domain)
     return domain
 
 
 def make_dirs(output_dir: 'pathlib.Path') -> None:
+    """Create the dirs where the htmls and pdfs are stored"""
     (output_dir / "risitas-html").mkdir(exist_ok=True, parents=True)
     (output_dir / "risitas-pdf").mkdir(exist_ok=True, parents=True)
 
@@ -131,6 +136,7 @@ def get_selectors_and_site(
     ],
     str
 ]:
+    """Select which set of selectors to use"""
     domain = get_domain(link)
     if domain == "jeuxvideo.com":
         selectors = sites_selectors.Jvc
@@ -147,6 +153,7 @@ def create_pdfs(
         html_download: List['pathlib.Path']=None,
         all_pdfs=False,
 ) -> None:
+    """Create pdfs from a list of htmls"""
     html_folder_path = output_dir / "risitas-html"
     htmls = []
     pdf_to_create = dict()
@@ -212,13 +219,15 @@ def create_pdfs(
 
 
 def read_links(links_file: pathlib.Path) -> List:
+    """Get all the links in a text file."""
     links_file = links_file.expanduser().resolve()
-    with open(links_file, encoding='utf-8') as f:
-        page_links = [line.strip() for line in f if line.strip() != '']
+    with open(links_file, encoding='utf-8') as file:
+        page_links = [line.strip() for line in file if line.strip() != '']
     return page_links
 
 
 def get_args() -> argparse.Namespace:
+    """Parse arguments given on the command line"""
     parser = argparse.ArgumentParser()
     default_links = [pathlib.Path().cwd() / "risitas-links"]
     parser.add_argument(
@@ -378,10 +387,14 @@ def get_args() -> argparse.Namespace:
 
 
 def contains_webarchive(archive_link: str) -> bool:
+    """Check if link domain is webarchive"""
     return bool("web.archive.org" in archive_link)
 
 
 def replace_youtube_embed(youtube_link: str) -> str:
+    """On webarchive site, the youtube videos
+    are displayed as frames not links, this replace
+    the frames by the youtube link"""
     archive_link_parse = urlparse(youtube_link)
     video_id = archive_link_parse.path[
         archive_link_parse.path.rfind("/"):
@@ -394,6 +407,7 @@ def replace_youtube_embed(youtube_link: str) -> str:
 
 
 def strip_webarchive_link(archive_link: str) -> str:
+    """Remove the webarchive part to get the clean jeuxvideo.com link"""
     archive_link_parsed = urlparse(archive_link)
     splitted_link = archive_link_parsed.geturl().split("/")[5:]
     new_link = "/".join(splitted_link)
@@ -401,24 +415,26 @@ def strip_webarchive_link(archive_link: str) -> str:
 
 
 def replace_youtube_frames(soup: 'BeautifulSoup') -> 'BeautifulSoup':
+    """Replace youtube frames by the link of the video"""
     for page in soup:
         current_post = page[0]
         frames = current_post.select(".embed-youtube > iframe")
         spans = current_post.select(".embed-youtube")
-        bs = BeautifulSoup()
+        beautiful_soup = BeautifulSoup()
         for frame, span in zip(frames, spans):
             archive_link = frame.attrs["src"]
             embed_link = strip_webarchive_link(archive_link)
             youtube_link = replace_youtube_embed(embed_link)
-            p = bs.new_tag("p")
-            a = bs.new_tag("a", href=youtube_link)
-            a.string = f"{youtube_link}"
-            p.append(a)
-            span.replace_with(p)
+            paragraph = beautiful_soup.new_tag("p")
+            link = beautiful_soup.new_tag("a", href=youtube_link)
+            link.string = f"{youtube_link}"
+            paragraph.append(link)
+            span.replace_with(paragraph)
     return soup
 
 
 def parse_input_links(links):
+    """Parse the links given on the command line."""
     links_file = pathlib.Path(links[0])
     if len(links) == 1 and links_file.exists():
         page_links = read_links(links_file)
