@@ -7,12 +7,11 @@ import tempfile
 import unicodedata
 import pathlib
 import re
-import sys
 import argparse
 import logging
 
 from urllib.parse import urlparse
-from PyPDF2 import PdfFileMerger, PdfFileReader
+from PyPDF2 import PdfFileMerger
 from bs4 import BeautifulSoup
 from risiparse import html_to_pdf, sites_selectors
 
@@ -144,9 +143,9 @@ def get_selectors_and_site(
 
 def create_pdfs(
         output_dir: 'pathlib.Path',
-        html_user: List['pathlib.Path'] = None,
-        html_download: List['pathlib.Path'] = None,
-        all_pdfs = False,
+        html_user: List['pathlib.Path']=None,
+        html_download: List['pathlib.Path']=None,
+        all_pdfs=False,
 ) -> None:
     html_folder_path = output_dir / "risitas-html"
     htmls = []
@@ -163,8 +162,9 @@ def create_pdfs(
     for html in htmls:
         if html.stat().st_size >= 3670016:
             logging.info(
-                f"The html file {html} is too big and will be splitted into multiple parts, "
-                "then pdfs will be created and merged back into one single pdf."
+                f"The html file {html} is too big and will be splitted "
+                "into multiple parts, then pdfs will be created and "
+                "merged back into one single pdf."
             )
             data = BeautifulSoup(
                 html.read_text(encoding='utf-8'), features="lxml"
