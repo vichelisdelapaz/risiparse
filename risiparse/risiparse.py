@@ -428,7 +428,8 @@ class Posts():
             post_paragraph_text = post.select_one("p").text[0:200]
         except AttributeError as text_error:
             logging.exception(
-                "The post doesn't contains text, probably some image %s", text_error
+                "The post doesn't contains text, probably some image %s",
+                text_error
             )
             return False
         contains_identifiers = regexp.search(post_paragraph_text)
@@ -509,7 +510,10 @@ class Posts():
                         "Displaying %s at full scale!", img.attrs["src"]
                     )
                 except KeyError as missing_attribute:
-                    logging.exception("This is a jvc smiley! %s", missing_attribute)
+                    logging.exception(
+                        "This is a jvc smiley! %s",
+                        missing_attribute
+                    )
         if self.domain == Jvc.SITE.value:
             for img in imgs:
                 if re.search("fichiers", img.attrs["alt"]):
@@ -680,10 +684,10 @@ def main() -> None:
 
     # File logging
     log_file = output_dir / f"risiparse-{TODAY}.log"
-    FILE_HANDLER = logging.FileHandler(log_file)
-    FILE_HANDLER.setLevel(logging.DEBUG)
-    FILE_HANDLER.setFormatter(logging.Formatter(FMT))
-    LOGGER.addHandler(FILE_HANDLER)
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(FMT))
+    LOGGER.addHandler(file_handler)
 
     all_messages = args.all_messages
     download_images = args.download_images
@@ -701,7 +705,7 @@ def main() -> None:
     make_dirs(output_dir)
     if args.debug:
         STDOUT_HANDLER.setLevel(logging.DEBUG)
-        FILE_HANDLER.setLevel(logging.DEBUG)
+        file_handler.setLevel(logging.DEBUG)
     if not no_download:
         page_links = parse_input_links(args.links)
         htmls_file_path = []

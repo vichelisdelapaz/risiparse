@@ -149,8 +149,8 @@ def get_selectors_and_site(
 
 def create_pdfs(
         output_dir: 'pathlib.Path',
-        html_user: List['pathlib.Path']=None,
-        html_download: List['pathlib.Path']=None,
+        html_user: List['pathlib.Path'] = None,
+        html_download: List['pathlib.Path'] = None,
         all_pdfs=False,
 ) -> None:
     """Create pdfs from a list of htmls"""
