@@ -9,12 +9,14 @@ import pathlib
 import re
 import argparse
 import logging
+import datetime
 
 from urllib.parse import urlparse
 from PyPDF2 import PdfFileMerger
 from bs4 import BeautifulSoup
 from risiparse import html_to_pdf, sites_selectors
 
+TODAY = datetime.date.today()
 
 def write_html(
         title: str,
@@ -221,9 +223,6 @@ def create_pdfs(
                 logging.info("Merged pdf parts into %s", k)
 
 
-def read_links(links_file: pathlib.Path) -> List:
-
-
 def read_links(links_file: pathlib.Path) -> List[str]:
     """Get all the links in a text file."""
     links_file = links_file.expanduser().resolve()
@@ -386,7 +385,7 @@ def get_args() -> argparse.Namespace:
         action="store",
         help="Output dir, Default is current dir",
         default=pathlib.Path.cwd(),
-        type=pathlib.Path
+        type=lambda p: pathlib.Path(p).expanduser().resolve()
     )
     args = parser.parse_args()
     return args
