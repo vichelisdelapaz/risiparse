@@ -682,12 +682,7 @@ def main() -> None:
     args = get_args()
     output_dir = args.output_dir.expanduser().resolve()
 
-    # File logging
-    log_file = output_dir / f"risiparse-{TODAY}.log"
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(logging.Formatter(FMT))
-    LOGGER.addHandler(file_handler)
+    set_file_logging(output_dir, LOGGER, format)
 
     all_messages = args.all_messages
     download_images = args.download_images

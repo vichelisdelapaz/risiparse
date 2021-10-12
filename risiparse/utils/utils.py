@@ -447,3 +447,16 @@ def parse_input_links(links: List[str]) -> List[str]:
     else:
         page_links = links
     return page_links
+
+
+def set_file_logging(
+        output_dir: 'pathlib.Path',
+        logger: 'logging.RootLogger',
+        format: str
+) -> None:
+    """Set up the logging to a file."""
+    log_file = output_dir / f"risiparse-{TODAY}.log"
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(format))
+    logger.addHandler(file_handler)
