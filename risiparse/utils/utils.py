@@ -2,7 +2,7 @@
 
 """This module just regroup some routines"""
 
-from typing import List, Union
+from typing import List, Union, Type
 import tempfile
 import unicodedata
 import pathlib
@@ -120,7 +120,7 @@ def get_domain(url: str) -> str:
     return domain
 
 
-def make_dirs(output_dir: 'pathlib.Path') -> None:
+def make_app_dirs(output_dir: 'pathlib.Path') -> None:
     """Create the dirs where the htmls and pdfs are stored"""
     (output_dir / "risitas-html").mkdir(exist_ok=True, parents=True)
     (output_dir / "risitas-pdf").mkdir(exist_ok=True, parents=True)
@@ -128,23 +128,23 @@ def make_dirs(output_dir: 'pathlib.Path') -> None:
 
 def get_selectors_and_site(
         link: str
-) -> tuple[
-    Union[
-        'sites_selectors.Jvc',
-        'sites_selectors.Jvarchive',
-        'sites_selectors.Webarchive'
-    ],
-    str
-]:
+) -> (
+    Type['sites_selectors.Jvc'] |
+    Type['sites_selectors.Jvarchive'] |
+    Type['sites_selectors.Webarchive']
+):
     """Select which set of selectors to use"""
     domain = get_domain(link)
     if domain == "jeuxvideo.com":
-        selectors = sites_selectors.Jvc
+        return sites_selectors.Jvc
     elif domain == "jvarchive.com":
-        selectors = sites_selectors.Jvarchive
+        return sites_selectors.Jvarchive
     elif domain == "web.archive.org":
-        selectors = sites_selectors.Webarchive
-    return selectors
+        return sites_selectors.Webarchive
+    else:
+        raise ValueError(
+            f"The domain in the {link} doesn't match any domain supported"
+        )
 
 
 def create_pdfs(
@@ -213,7 +213,7 @@ def create_pdfs(
             pdfs_to_merge = page.get_pdfs_path()
             for filename in pdfs_to_merge:
                 merger.append(filename)
-            with open(f"{k}", 'wb') as f:
+            with open(f"{k}", 'w') as f:
                 merger.write(f)
                 logging.info("Merged pdf parts into %s", k)
 
