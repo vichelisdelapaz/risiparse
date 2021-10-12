@@ -2,7 +2,7 @@
 
 """This module just regroup some routines"""
 
-from typing import List, Union, Type
+from typing import List, Type
 import tempfile
 import unicodedata
 import pathlib
@@ -65,7 +65,10 @@ def write_html(
     return html_path
 
 
-def append_html(html_path: 'pathlib.Path', risitas_html: 'BeautifulSoup'):
+def append_html(
+        html_path: 'pathlib.Path',
+        risitas_html: 'BeautifulSoup'
+) -> None:
     with open(html_path, encoding='utf-8') as html_file:
         soup = BeautifulSoup(html_file, features="lxml")
     for new_chapter in risitas_html:
@@ -219,6 +222,9 @@ def create_pdfs(
 
 
 def read_links(links_file: pathlib.Path) -> List:
+
+
+def read_links(links_file: pathlib.Path) -> List[str]:
     """Get all the links in a text file."""
     links_file = links_file.expanduser().resolve()
     with open(links_file, encoding='utf-8') as file:
@@ -433,7 +439,7 @@ def replace_youtube_frames(soup: 'BeautifulSoup') -> 'BeautifulSoup':
     return soup
 
 
-def parse_input_links(links):
+def parse_input_links(links: List[str]) -> List[str]:
     """Parse the links given on the command line."""
     links_file = pathlib.Path(links[0])
     if len(links) == 1 and links_file.exists():
