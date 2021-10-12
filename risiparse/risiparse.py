@@ -587,8 +587,6 @@ class Posts():
             pass
         return risitas_html
 
-    def _check_post_conditions(self) -> bool:
-        pass
 
     def get_posts(
             self,
@@ -676,145 +674,164 @@ class Posts():
             self.message_cursor = message_cursor
 
 
-def _get_risitas_info(
-        link: str,
-        domain:str,
-        args: 'argparse.Namespace',
-        page_downloader: 'Pagedownloader'
-) -> tuple[str]:
-    selectors = get_selectors_and_site(link)
-    page_number: int = 1
-    soup = page_downloader.download_topic_page(
-              link,
-              page_number,
-    )
-    risitas_info = RisitasInfo(soup, selectors, domain)
-    authors = [risitas_info.author] + args.authors
-    posts = Posts(
-              selectors,
-              page_downloader,
-              domain,
-              args.all_messages,
-              args.no_resize_images,
-    )
-    return risitas_info, page_number, authors, posts
+class RisitasPostsDownload():
+    """Handle the download of posts"""
 
-def _set_init_message_cursor(
-        no_database: bool
-) -> tuple[int, bool]:
-    append = False
-    message_cursor_db = 0
-    if not no_database:
-        if row[0]:
-            if not page_number:
-                page_number = row[0][6]
-            append = True
-            message_cursor_db = row[0][7]
-        else:
-            message_cursor_db = 0
-    return message_cursor_db, append
+    def __init__(self, page_downloader, args):
+        self.page_downloader = page_downloader
+        self.args = args
+        self.page_number = 1
+        self.posts = None
+        self.authors = []
+        self.append = False
+
+    def disable_database_webarchive(self, domain) -> None:
+        if domain == Webarchive.SITE.value:
+            self.args.no_database = True
+
+    def replace_webarchive_youtube_frame(
+            self,
+            domain,
+            risitas_html
+    ) -> List[str]:
+        if domain == Webarchive.SITE.value:
+            risitas_html = replace_youtube_frames(risitas_html)
+        return risitas_html
+
+    def get_risitas_info(
+            self,
+            link: str,
+            domain: str,
+    ) -> 'RisitasInfo':
+        selectors = get_selectors_and_site(link)
+        soup = self.page_downloader.download_topic_page(
+            link,
+            self.page_number,
+        )
+        risitas_info = RisitasInfo(soup, selectors, domain)
+        self.authors = [risitas_info.author] + self.args.authors
+        self.posts = Posts(
+            selectors,
+            self.page_downloader,
+            domain,
+            self.args.all_messages,
+            self.args.no_resize_images,
+        )
+        return risitas_info
+
+    def _set_init_message_cursor(
+            self,
+            row
+    ) -> tuple[int, bool]:
+        self.append = False
+        message_cursor_db = 0
+        if not self.args.no_database:
+            if row[0]:
+                if not self.page_number:
+                    self.page_number = row[0][6]
+                self.append = True
+                message_cursor_db = row[0][7]
+            else:
+                message_cursor_db = 0
+        return message_cursor_db
 
 
-def _set_post_message_cursor(
-        posts: 'Posts',
-        message_cursor: int,
-        page: int,
-        total_pages: int,
-) -> int:
-    if (
-            posts.message_cursor and
-            page + 1 == total_pages and
-            posts.added_message
-    ):
-        message_cursor = posts.message_cursor
-    else:
+    def _set_post_message_cursor(
+            self,
+            page: int,
+            total_pages: int,
+    ) -> int:
         message_cursor = 0
-    return message_cursor
+        if (
+                self.posts.message_cursor and
+                page + 1 == total_pages and
+                self.posts.added_message
+        ):
+            message_cursor = self.posts.message_cursor
+        return message_cursor
 
 
-def _append_to_or_write_html_file(
-        append: bool,
-        args: 'argparse.Namespace',
-        risitas_html: 'Posts',
-        risitas_info: 'Risitasinfo'
-) -> List['pathlib.Path']:
-    htmls_file_path = []
-    if append and not no_database:
-        file_path = pathlib.Path(row[0][4])
-        htmls_file_path.append(file_path)
-        append_html(file_path, risitas_html)
-    else:
-        file_path = write_html(
-                 risitas_info.title,
-                 risitas_info.author,
-                 risitas_html,
-                 args.output_dir,
-        )
-        htmls_file_path.append(file_path)
-    return htmls_file_path
-
-
-def _log_posts_downloaded_and_duplicates(
-        all_messages: bool,
-        risitas_info: 'Risitasinfo',
-        posts: 'Posts'
-) -> None:
-    logging.info(
-           "The number of posts downloaded for "
-           "%s "
-           "is : %d", risitas_info.title, posts.count
-    )
-    if not all_messages:
+    def log_posts_downloaded_and_duplicates(
+            self,
+            all_messages: bool,
+            risitas_info: 'Risitasinfo',
+            posts: 'Posts'
+    ) -> None:
         logging.info(
-            "The number of duplicates for "
+            "The number of posts downloaded for "
             "%s "
-            "is : %d", risitas_info.title, posts.duplicates
+            "is : %d", risitas_info.title, posts.count
         )
+        if not all_messages:
+            logging.info(
+                "The number of duplicates for "
+                "%s "
+                "is : %d", risitas_info.title, posts.duplicates
+            )
+
+    def download_posts(
+            self,
+            link: str,
+            total_pages: int,
+    ):
+        for page in range(total_pages):
+            message_cursor_db = self._set_init_message_cursor()
+            soup = self.page_downloader.download_topic_page(
+                link, self.page_number
+            )
+            if not soup:
+                self.page_number += 1
+                continue
+            self.posts.get_posts(
+                soup,
+                self.authors,
+                self.args.identifiers,
+                self.args.no_match_author,
+                self.append,
+                message_cursor_db
+            )
+            self.page_number += 1
+            message_cursor_db = self._set_post_message_cursor(
+                page,
+                total_pages
+            )
+        return self.posts.risitas_html
 
 
-def _get_database_risitas_page(row: tuple):
+def get_database_risitas_page(row: tuple, total_pages: int):
     risitas_database_pages = row[0][6]
     if row[0]:
         page_number = 0
         total_pages = (
-            risitas_info.total_pages - risitas_database_pages + 1
+            total_pages - risitas_database_pages + 1
         )
     return total_pages
 
 
-def _download_posts(
-        link,
-        page_number,
-        total_pages,
-        args,
-        authors,
-        page_downloader,
-        posts
-):
-    for page in range(total_pages):
-        message_cursor_db, append = _set_init_message_cursor(args.no_database)
-        soup = page_downloader.download_topic_page(
-               link, page_number
-        )
-        if not soup:
-            page_number += 1
-            continue
-        posts.get_posts(
-            soup,
-            authors,
-            args.identifiers,
-            args.no_match_author,
-            append,
-            message_cursor_db
-        )
-        page_number += 1
-        message_cursor_db = _set_post_message_cursor(
-            posts,
-            message_cursor_db,
-            page,
-            total_pages
-        )
-    return posts.risitas_html, append
+def append_to_or_write_html_file(
+    append: bool,
+    args: 'argparse.Namespace',
+    risitas_html: 'Posts',
+    risitas_info: 'RisitasInfo'
+) -> List['pathlib.Path']:
+    """
+    Create or append an html file, side effect is to
+    collect html_file_path to convert them to pdf
+    """
+    htmls_file_path = []
+    if append and not args.no_database:
+           file_path = pathlib.Path(row[0][4])
+           htmls_file_path.append(file_path)
+           append_html(file_path, risitas_html)
+    else:
+           file_path = write_html(
+               risitas_info.title,
+               risitas_info.author,
+               risitas_html,
+               args.output_dir,
+           )
+           htmls_file_path.append(file_path)
+    return htmls_file_path
 
 
 def download_risitas(args):
@@ -824,44 +841,30 @@ def download_risitas(args):
     for link in page_links:
         domain = get_domain(link)
         page_downloader = PageDownloader(domain)
-        if domain == Webarchive.SITE.value:
-            args.no_database = True
-        risitas_info, page_number, authors, posts = _get_risitas_info(
-            link,
-            domain,
-            args,
-            page_downloader
-        )
+        posts_downloader = RisitasPostsDownload(page_downloader, args)
+        risitas_info = posts_downloader.get_risitas_info(link, domain)
+        posts_downloader.disable_database_webarchive(domain)
         total_pages = risitas_info.total_pages
         if not args.no_database:
             row = read_db(link)
-            total_pages = _get_database_risitas_page(row)
-        risitas_html, append = _download_posts(
+            total_pages = get_database_risitas_page(
+                row,
+                risitas_info.total_pages
+            )
+        risitas_html = posts_downloader.download_posts(
             link,
-            page_number,
             total_pages,
-            args,
-            authors,
-            page_downloader,
-            posts
         )
         if not risitas_html and not args.no_database:
             logging.info("There is no new chapters available!")
             continue
-        _log_posts_downloaded_and_duplicates(
-            args.all_messages,
-            risitas_info,
-            posts
-        )
         if args.download_images:
             page_downloader.download_images(
-                posts.risitas_html,
+                risitas_html,
                 args.output_dir,
             )
-        if domain == Webarchive.SITE.value:
-            posts.risitas_html = replace_youtube_frames(risitas_html)
-        htmls_file_path = _append_to_or_write_html_file(
-            append,
+        htmls_file_path = append_to_or_write_html_file(
+            posts_downloader.append,
             args,
             risitas_html,
             risitas_info
