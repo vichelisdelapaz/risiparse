@@ -15,8 +15,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from risiparse.sites_selectors import Noelshack, Jvc, Jvarchive, Webarchive
 from risiparse.utils.utils import (
-    write_html,
-    append_html,
+    slugify,
     get_domain,
     make_app_dirs,
     get_selectors_and_site,
@@ -684,6 +683,7 @@ class RisitasPostsDownload():
         self.posts = None
         self.authors = []
         self.append = False
+        self.message_cursor = 0
 
     def disable_database_webarchive(self, domain) -> None:
         if domain == Webarchive.SITE.value:
@@ -720,36 +720,30 @@ class RisitasPostsDownload():
         return risitas_info
 
     def _set_init_message_cursor(
-            self,
-            row
-    ) -> tuple[int, bool]:
-        self.append = False
-        message_cursor_db = 0
+        self,
+        row: tuple[str]
+    ) -> None:
         if not self.args.no_database:
             if row[0]:
                 if not self.page_number:
                     self.page_number = row[0][6]
                 self.append = True
-                message_cursor_db = row[0][7]
+                self.message_cursor = row[0][7]
             else:
-                message_cursor_db = 0
-        return message_cursor_db
-
+                self.message_cursor = 0
 
     def _set_post_message_cursor(
-            self,
-            page: int,
-            total_pages: int,
-    ) -> int:
+        self,
+        page: int,
+        total_pages: int,
+    ) -> None:
         message_cursor = 0
         if (
                 self.posts.message_cursor and
                 page + 1 == total_pages and
                 self.posts.added_message
         ):
-            message_cursor = self.posts.message_cursor
-        return message_cursor
-
+            self.message_cursor = self.posts.message_cursor
 
     def log_posts_downloaded_and_duplicates(
             self,
@@ -773,9 +767,10 @@ class RisitasPostsDownload():
             self,
             link: str,
             total_pages: int,
+            row: tuple[str]
     ):
         for page in range(total_pages):
-            message_cursor_db = self._set_init_message_cursor()
+            self._set_init_message_cursor(row)
             soup = self.page_downloader.download_topic_page(
                 link, self.page_number
             )
@@ -788,10 +783,10 @@ class RisitasPostsDownload():
                 self.args.identifiers,
                 self.args.no_match_author,
                 self.append,
-                message_cursor_db
+                self.message_cursor
             )
             self.page_number += 1
-            message_cursor_db = self._set_post_message_cursor(
+            self._set_post_message_cursor(
                 page,
                 total_pages
             )
@@ -799,8 +794,8 @@ class RisitasPostsDownload():
 
 
 def get_database_risitas_page(row: tuple, total_pages: int):
-    risitas_database_pages = row[0][6]
     if row[0]:
+        risitas_database_pages = row[0][6]
         page_number = 0
         total_pages = (
             total_pages - risitas_database_pages + 1
@@ -808,30 +803,102 @@ def get_database_risitas_page(row: tuple, total_pages: int):
     return total_pages
 
 
-def append_to_or_write_html_file(
-    append: bool,
-    args: 'argparse.Namespace',
-    risitas_html: 'Posts',
-    risitas_info: 'RisitasInfo'
-) -> List['pathlib.Path']:
-    """
-    Create or append an html file, side effect is to
-    collect html_file_path to convert them to pdf
-    """
+class RisitasHtmlFile():
+    """Handle all hte html file I/O"""
+
     htmls_file_path = []
-    if append and not args.no_database:
-           file_path = pathlib.Path(row[0][4])
-           htmls_file_path.append(file_path)
-           append_html(file_path, risitas_html)
-    else:
-           file_path = write_html(
-               risitas_info.title,
-               risitas_info.author,
-               risitas_html,
-               args.output_dir,
-           )
-           htmls_file_path.append(file_path)
-    return htmls_file_path
+
+    def __init__(self, risitas_html, risitas_info, args, row):
+        self.html_file_path = pathlib.Path()
+        self.risitas_html = risitas_html
+        self.risitas_info = risitas_info
+        self.args = args
+        self.row = row
+
+    def append_to_or_write_html_file(
+            self,
+            append: bool,
+    ) -> None:
+        """
+        Create or append an html file, side effect is to
+        collect html_file_path to convert them to pdf
+        """
+        if append and not self.args.no_database:
+            self.html_file_path = pathlib.Path(self.row[0][4])
+            self.htmls_file_path.append(self.html_file_path)
+            self.append_html(self.html_file_path, self.risitas_html)
+        else:
+            self.write_html()
+            self.htmls_file_path.append(self.html_file_path)
+
+    def _write_html_template(
+            self,
+            html_file: '_io.TextIOWrapper',
+            begin: bool = False,
+            end: bool = False,
+    ):
+        if begin:
+            html = (
+                   """<!DOCTYPE html>
+                   <html lang='fr'>
+                   <head>
+                   <meta charset='UTF-8'>
+                   <meta name='viewport' \
+                   content='width=device-width, initial-scale=1.0'>
+                   <title>Risitas</title>
+                   </head>
+                   <body>"""
+            )
+            html_file.write(html)
+        elif end:
+            html = (
+            """</body>
+               </html>"""
+            )
+            html_file.write(html)
+
+    def _increment_html_file_name(self) -> None:
+        title_slug = slugify(self.risitas_info.title, title=True)
+        author_slug = slugify(self.risitas_info.author, title=False)
+        ext = "html"
+        i = 0
+        full_title = f"{author_slug}-{title_slug}-{i}"
+        html_path = (
+            self.args.output_dir /
+            "risitas-html" /
+            (full_title + f".{ext}")
+        )
+        while html_path.exists():
+            i += 1
+            full_title = f"{author_slug}-{title_slug}-{i}"
+            html_path = (
+                self.args.output_dir /
+                "risitas-html" /
+                (full_title + f".{ext}")
+            )
+        self.html_file_path = html_path
+
+    def write_html(
+            self,
+    ) -> None:
+        """Produce an html file from the risitas soup"""
+        self._increment_html_file_name()
+        with open(self.html_file_path, "w", encoding="utf-8") as html_file:
+            self._write_html_template(html_file, begin=True, end=False)
+            for paragraph in self.risitas_html:
+                   html_file.write(str(paragraph[0]).replace("’", "'"))
+            self._write_html_template(html_file, begin=False, end=True)
+            logging.info("Wrote %s", self.html_file_path)
+
+    def append_html(self) -> None:
+        with open(self.html_file_path, encoding='utf-8') as html_file:
+            soup = BeautifulSoup(html_file, features="lxml")
+        for new_chapter in self.risitas_html:
+            soup.body.insert(len(soup.body.contents), new_chapter[0])
+            logging.debug("Appending %s ...", new_chapter[0])
+        with open(self.html_path_file, "w", encoding='utf-8') as html_file:
+            html_file.write(soup.decode().replace("’", "'"))
+        logging.info("The chapters have been appended to %s", html_path_file)
 
 
 def download_risitas(args):
@@ -845,6 +912,7 @@ def download_risitas(args):
         risitas_info = posts_downloader.get_risitas_info(link, domain)
         posts_downloader.disable_database_webarchive(domain)
         total_pages = risitas_info.total_pages
+        row = [()]
         if not args.no_database:
             row = read_db(link)
             total_pages = get_database_risitas_page(
@@ -854,6 +922,7 @@ def download_risitas(args):
         risitas_html = posts_downloader.download_posts(
             link,
             total_pages,
+            row
         )
         if not risitas_html and not args.no_database:
             logging.info("There is no new chapters available!")
@@ -863,29 +932,32 @@ def download_risitas(args):
                 risitas_html,
                 args.output_dir,
             )
-        htmls_file_path = append_to_or_write_html_file(
-            posts_downloader.append,
-            args,
+        risitas_html_file = RisitasHtmlFile(
             risitas_html,
-            risitas_info
+            risitas_info,
+            args,
+            row
+        )
+        risitas_html_file.append_to_or_write_html_file(
+            posts_downloader.append,
         )
         if not args.no_database:
             update_db(
                 domain,
                 risitas_info.title,
                 link,
-                file_path,
+                risitas_html_file.html_file_path,
                 risitas_info.total_pages,
                 risitas_info.total_pages,
-                message_cursor,
-                authors,
+                posts_downloader.message_cursor,
+                posts_downloader.authors,
             )
 
 
 def main() -> None:
     args = get_args()
     set_file_logging(args.output_dir, LOGGER, FMT)
-    htmls_file_path = None
+    htmls_file_path = []
     if args.clear_database:
         delete_db()
         sys.exit()

@@ -18,77 +18,14 @@ from risiparse import html_to_pdf, sites_selectors
 
 TODAY = datetime.date.today()
 
-def write_html(
-        title: str,
-        author: str,
-        posts: List,
-        output_dir: 'pathlib.Path',
-) -> 'pathlib.Path':
-    """Produce an html file from the risitas soup"""
-    title_slug = slugify(title, title=True)
-    author_slug = slugify(author, title=False)
-    ext = "html"
-    i = 0
-    full_title = f"{author_slug}-{title_slug}-{i}"
-    html_path = (
-        output_dir /
-        "risitas-html" /
-        (full_title + f".{ext}")
-    )
-    while html_path.exists():
-        i += 1
-        full_title = f"{author_slug}-{title_slug}-{i}"
-        html_path = (
-            output_dir /
-            "risitas-html" /
-            (full_title + f".{ext}")
-        )
-    with open(html_path, "w", encoding="utf-8") as html_file:
-        html = (
-            """<!DOCTYPE html>
-            <html lang='fr'>
-            <head>
-            <meta charset='UTF-8'>
-            <meta name='viewport' \
-            content='width=device-width, initial-scale=1.0'>
-            <title>Risitas</title>
-            </head>
-            <body>"""
-        )
-        html_file.write(html)
-        for paragraph in posts:
-            html_file.write(str(paragraph[0]).replace("’", "'"))
-        html = (
-            """</body>
-            </html>"""
-        )
-        html_file.write(html)
-        logging.info("Wrote %s", html_path)
-    return html_path
-
-
-def append_html(
-        html_path: 'pathlib.Path',
-        risitas_html: 'BeautifulSoup'
-) -> None:
-    with open(html_path, encoding='utf-8') as html_file:
-        soup = BeautifulSoup(html_file, features="lxml")
-    for new_chapter in risitas_html:
-        soup.body.insert(len(soup.body.contents), new_chapter[0])
-        logging.debug("Appending %s ...", new_chapter[0])
-    with open(html_path, "w", encoding='utf-8') as html_file:
-        html_file.write(soup.decode().replace("’", "'"))
-    logging.info("The chapters have been appended to %s", html_path)
+def _replace_whitespaces(title: str) -> str:
+    title_dashes = title.replace(" ", "-")
+    return title_dashes
 
 
 def _remove_risitas(title: str) -> str:
     regexp = re.compile(r"\[risitas\]", re.IGNORECASE)
     return regexp.sub("", title).strip()
-
-
-def _replace_whitespaces(title: str) -> str:
-    title_dashes = title.replace(" ", "-")
-    return title_dashes
 
 
 def slugify(
