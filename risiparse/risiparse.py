@@ -13,13 +13,13 @@ import waybackpy
 
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 from risiparse.sites_selectors import Noelshack, Jvc, Jvarchive, Webarchive
 from risiparse.utils.utils import (
     write_html,
     append_html,
     get_domain,
-    make_dirs,
+    make_app_dirs,
     get_selectors_and_site,
     create_pdfs,
     parse_input_links,
@@ -702,7 +702,7 @@ def main() -> None:
     if clear_database:
         delete_db()
         sys.exit()
-    make_dirs(output_dir)
+    make_app_dirs(output_dir)
     if args.debug:
         STDOUT_HANDLER.setLevel(logging.DEBUG)
         file_handler.setLevel(logging.DEBUG)
