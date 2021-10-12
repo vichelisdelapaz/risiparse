@@ -31,7 +31,7 @@ from risiparse.utils.log import ColorFormatter
 from risiparse.utils.database import update_db, read_db, delete_db
 
 LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.INFO)
+LOGGER.setLevel(logging.DEBUG)
 
 FMT = '%(asctime)s:%(levelname)s: %(message)s'
 
@@ -961,7 +961,6 @@ def main() -> None:
         sys.exit()
     make_app_dirs(args.output_dir)
     if args.debug:
-        LOGGER.setLevel(logging.DEBUG)
         STDOUT_HANDLER.setLevel(logging.DEBUG)
     if not args.no_download:
         htmls_file_path = download_risitas(args)
