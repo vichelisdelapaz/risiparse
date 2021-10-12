@@ -737,7 +737,6 @@ class RisitasPostsDownload():
         page: int,
         total_pages: int,
     ) -> None:
-        message_cursor = 0
         if (
                 self.posts.message_cursor and
                 page + 1 == total_pages and
@@ -796,7 +795,7 @@ class RisitasPostsDownload():
 def get_database_risitas_page(row: tuple, total_pages: int):
     if row[0]:
         risitas_database_pages = row[0][6]
-        page_number = 0
+        #page_number = 0
         total_pages = (
             total_pages - risitas_database_pages + 1
         )
@@ -886,7 +885,7 @@ class RisitasHtmlFile():
         with open(self.html_file_path, "w", encoding="utf-8") as html_file:
             self._write_html_template(html_file, begin=True, end=False)
             for paragraph in self.risitas_html:
-                   html_file.write(str(paragraph[0]).replace("’", "'"))
+                html_file.write(str(paragraph[0]).replace("’", "'"))
             self._write_html_template(html_file, begin=False, end=True)
             logging.info("Wrote %s", self.html_file_path)
 
@@ -901,10 +900,9 @@ class RisitasHtmlFile():
         logging.info("The chapters have been appended to %s", html_path_file)
 
 
-def download_risitas(args):
+def download_risitas(args) -> List['pathlib.Path']:
     """Download risitas"""
     page_links = parse_input_links(args.links)
-    htmls_file_path = []
     for link in page_links:
         domain = get_domain(link)
         page_downloader = PageDownloader(domain)
@@ -952,12 +950,12 @@ def download_risitas(args):
                 posts_downloader.message_cursor,
                 posts_downloader.authors,
             )
+    return risitas_html_file.htmls_file_path
 
 
 def main() -> None:
     args = get_args()
     set_file_logging(args.output_dir, LOGGER, FMT)
-    htmls_file_path = []
     if args.clear_database:
         delete_db()
         sys.exit()
@@ -966,6 +964,6 @@ def main() -> None:
         STDOUT_HANDLER.setLevel(logging.DEBUG)
         file_handler.setLevel(logging.DEBUG)
     if not args.no_download:
-        download_risitas(args)
+        htmls_file_path = download_risitas(args)
     if not args.no_pdf:
-        create_pdfs(output_dir, create_pdfs_user, htmls_file_path, no_download)
+        create_pdfs(args.output_dir, htmls_file_path)
