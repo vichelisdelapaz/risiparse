@@ -961,8 +961,8 @@ def main() -> None:
         sys.exit()
     make_app_dirs(args.output_dir)
     if args.debug:
+        LOGGER.setLevel(logging.DEBUG)
         STDOUT_HANDLER.setLevel(logging.DEBUG)
-        file_handler.setLevel(logging.DEBUG)
     if not args.no_download:
         htmls_file_path = download_risitas(args)
     if not args.no_pdf:
