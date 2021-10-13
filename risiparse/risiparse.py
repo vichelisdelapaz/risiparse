@@ -181,7 +181,7 @@ class PageDownloader():
     def get_webarchive_img(
             self,
             link: str,
-    ) -> 'requests.models.Response' | None:
+    ) -> requests.models.Response | None:
         """Get the image from webarchive."""
         logging.error(
             "The image at %s "
