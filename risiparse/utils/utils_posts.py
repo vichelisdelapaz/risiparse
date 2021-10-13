@@ -6,7 +6,7 @@ from typing import List
 import logging
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 
 def check_post_length(post: BeautifulSoup) -> bool:
@@ -18,7 +18,7 @@ def check_post_length(post: BeautifulSoup) -> bool:
 
 def check_post_identifiers(
     post: BeautifulSoup,
-    identifiers: List
+    identifiers: List[str]
 ) -> bool:
     """Check if the post contains an identifier"""
     identifiers_joined = "|".join(identifiers)
@@ -69,7 +69,7 @@ def print_chapter_added(
         )
 
 
-def contains_paragraph(risitas_html) -> bool:
+def contains_paragraph(risitas_html: Tag) -> bool:
     """Check if post contains a paragraph"""
     has_paragraph = False
     try:

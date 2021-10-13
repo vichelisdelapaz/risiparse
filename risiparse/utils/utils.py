@@ -87,7 +87,7 @@ def get_selectors_and_site(
     )
 
 
-def html_is_too_big(html: pathlib.Path, size: int = 3670016):
+def html_is_too_big(html: pathlib.Path, size: int = 3670016) -> bool:
     """Check if an html file is too big"""
     return bool(html.stat().st_size >= size)
 
@@ -97,7 +97,7 @@ def split_big_html(
         html_part_tmpdir: str,
         splitted_pdfs: Dict[str, List[pathlib.Path]],
         divs_step: int = 30
-):
+) -> Dict[str, List[pathlib.Path]]:
     """Split an html file into smaller htmls"""
     (pathlib.Path(f"{html_part_tmpdir}") / "risitas-pdf").mkdir()
     data = BeautifulSoup(
@@ -131,8 +131,8 @@ def merge_pdfs(
         html_part_tmpdir: str
 ) -> None:
     """Create pdfs from smaller htmls and merge them back"""
-    app = html_to_pdf.QtWidgets.QApplication([])
     if splitted_pdfs:
+        app = html_to_pdf.QtWidgets.QApplication([])
         for pdf_file_name, htmls_part in splitted_pdfs.items():
             merger = PdfFileMerger()
             output_dir = pathlib.Path(f"{html_part_tmpdir}")
@@ -141,7 +141,7 @@ def merge_pdfs(
             app.exec()
             pdfs_to_merge = page.get_pdfs_path()
             for filename in pdfs_to_merge:
-                merger.append(filename)
+                merger.append(str(filename))
             with open(f"{pdf_file_name}", 'wb') as final_pdf:
                 merger.write(final_pdf)
                 logging.info("Merged pdf parts into %s", pdf_file_name)
@@ -422,7 +422,7 @@ def write_html_template(
         html_file,
         begin: bool = False,
         end: bool = False,
-):
+) -> None:
     """Write html template"""
     if begin:
         html = (
