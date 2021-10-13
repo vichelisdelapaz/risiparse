@@ -30,8 +30,13 @@ class PdfPage(QWebEnginePage):
         self.layout = QPageLayout()
         self.layout.setPageSize(QPageSize(QPageSize.A4))
         self.layout.setOrientation(QPageLayout.Portrait)
-        self.loadFinished.connect(self._handle_load_finished)
-        self.pdfPrintingFinished.connect(self._handle_printing_finished)
+        # Need to open issue on pylint
+        self.loadFinished.connect(  # pylint: disable=no-member
+            self._handle_load_finished
+        )
+        self.pdfPrintingFinished.connect(  # pylint: disable=no-member
+            self._handle_printing_finished
+        )
 
     def convert(self, htmls):
         """Processing html file one by one"""
