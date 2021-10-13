@@ -180,7 +180,7 @@ class PageDownloader():
     def get_webarchive_img(
             self,
             link: str,
-    ) -> Optional['requests.models.Response']:
+    ) -> 'requests.models.Response' | None:
         """Get the image from webarchive."""
         logging.error(
             "The image at %s "
@@ -247,6 +247,7 @@ class PageDownloader():
                         "Image not in cache, downloading "
                         "%s", file_name
                     )
+                    image = None
                     try:
                         image = self.http.get(link)
                         status_code = image.status_code
@@ -358,7 +359,7 @@ class Posts():
             self,
             risitas_info: 'RisitasInfo',
             downloader: PageDownloader,
-            args: 'argparse.Namespace',
+            args,
     ):
         self.risitas_html: List['BeautifulSoup'] = []
         self.risitas_raw_text: List[str] = []
@@ -456,7 +457,7 @@ class Posts():
     def _contains_blockquote(self, risitas_html: BeautifulSoup) -> bool:
         return bool(risitas_html.select("blockquote"))
 
-    def _check_chapter_image(self, soup: BeautifulSoup) -> bool:
+    def _check_post_is_image(self, soup: BeautifulSoup) -> bool:
         ret_val = False
         paragraphs = soup.select("p")
         if not paragraphs and self.risitas_info.domain == Jvarchive.SITE.value:
@@ -606,20 +607,21 @@ class Posts():
                 skip_post = True
         return skip_post
 
-    def _contains_paragraph(self, risitas_html: 'bs4') -> Optional["bs4"]:
-        contains_paragraph = None
+    def _contains_paragraph(self, risitas_html) -> bool:
+        contains_paragraph = False
         try:
-            contains_paragraph = risitas_html.select("p")
+            contains_paragraph = bool(risitas_html.select("p"))
         except AttributeError:
             pass
         return contains_paragraph
 
-    def _is_risitas_post(
+    def is_risitas_post(
             self,
             post,
             risitas_html,
             is_domain_webarchive
     ) -> bool:
+        """Check if the given post is a risitas"""
         is_author = self._check_post_author(
             post,
             self.args.no_match_author,
@@ -639,7 +641,7 @@ class Posts():
         contains_blockquote = self._contains_blockquote(risitas_html)
         if contains_blockquote:
             return False
-        contains_image = self._check_chapter_image(post)
+        contains_image = self._check_post_is_image(post)
         if (
                   not contains_identifiers and
                   self.count > 1 and
@@ -654,10 +656,10 @@ class Posts():
                contains_image
         )
         if is_duplicate:
-               first_lines = risitas_html.select_one('p').text[0:50].strip()
-               logging.error("The current post '%s' is a duplicate!", first_lines)
-               self.duplicates += 1
-               return False
+            first_lines = risitas_html.select_one('p').text[0:50].strip()
+            logging.error("The current post '%s' is a duplicate!", first_lines)
+            self.duplicates += 1
+            return False
         return True
 
     def get_posts(
@@ -667,6 +669,9 @@ class Posts():
             append: bool,
             message_cursor_db: int,
     ) -> None:
+        """
+        Check conditions to see if it's a post relevant to the risitas
+        """
         is_domain_webarchive = bool(
             self.risitas_info.domain == "web.archive.org"
         )
@@ -683,8 +688,8 @@ class Posts():
             contains_paragraph = self._contains_paragraph(risitas_html)
             if is_domain_webarchive and not contains_paragraph:
                 risitas_html = self._get_webarchive_post_html(post)
-            contains_image = self._check_chapter_image(post)
-            if not self._is_risitas_post(
+            contains_image = self._check_post_is_image(post)
+            if not self.is_risitas_post(
                     post,
                     risitas_html,
                     is_domain_webarchive
@@ -711,6 +716,10 @@ class RisitasPostsDownload():
         self.message_cursor = 0
 
     def disable_database_webarchive(self, domain) -> None:
+        """
+        If webarchive, no database because the risitas will never get updated.
+        Jeuxvideo.com forbids archive by webarchive, only jvarchive works.
+        """
         if domain == Webarchive.SITE.value:
             self.args.no_database = True
 
@@ -719,6 +728,10 @@ class RisitasPostsDownload():
             domain,
             risitas_html
     ) -> List[str]:
+        """
+        Youtube frames are displayed in webarchive
+        instead of a link, this fix it
+        """
         if domain == Webarchive.SITE.value:
             risitas_html = replace_youtube_frames(risitas_html)
         return risitas_html
@@ -728,6 +741,7 @@ class RisitasPostsDownload():
             link: str,
             domain: str,
     ) -> 'RisitasInfo':
+        """Get informations about the risitas."""
         selectors = get_selectors_and_site(link)
         soup = self.page_downloader.download_topic_page(
             link,
@@ -746,6 +760,7 @@ class RisitasPostsDownload():
         self,
         row: tuple[str]
     ) -> None:
+        """Set the post cursor for the first time"""
         if not self.args.no_database:
             if row[0]:
                 if not self.page_number:
@@ -769,28 +784,27 @@ class RisitasPostsDownload():
 
     def log_posts_downloaded_and_duplicates(
             self,
-            all_messages: bool,
-            risitas_info: 'Risitasinfo',
-            posts: 'Posts'
     ) -> None:
+        """Log number of post downloaded and duplicates."""
         logging.info(
             "The number of posts downloaded for "
             "%s "
-            "is : %d", risitas_info.title, posts.count
+            "is : %d", self.posts.risitas_info.title, self.posts.count
         )
-        if not all_messages:
+        if not self.posts.args.all_messages:
             logging.info(
                 "The number of duplicates for "
                 "%s "
-                "is : %d", risitas_info.title, posts.duplicates
+                "is : %d", self.posts.risitas_info.title, self.posts.duplicates
             )
 
     def download_posts(
             self,
             link: str,
             total_pages: int,
-            row: tuple[str]
+            row,
     ):
+        """Download all the relevant posts for the current risitas"""
         for page in range(total_pages):
             self._set_init_message_cursor(row)
             if not self.page_number:
@@ -812,10 +826,17 @@ class RisitasPostsDownload():
                 page,
                 total_pages
             )
+            self.log_posts_downloaded_and_duplicates()
         return self.posts.risitas_html
 
 
-def get_database_risitas_page(row: tuple, total_pages: int):
+def get_database_risitas_page(row, total_pages: int) -> int:
+    """
+    Compute the page number if in database,
+    (ex: 57 in the database and 60 currently),
+    this will output 3 -> 3 pages to download posts.
+    If no database return the page number given by risitas info
+    """
     if row[0]:
         risitas_database_pages = row[0][6]
         total_pages = (
@@ -827,7 +848,7 @@ def get_database_risitas_page(row: tuple, total_pages: int):
 class RisitasHtmlFile():
     """Handle all hte html file I/O"""
 
-    htmls_file_path = []
+    htmls_file_path: List['pathlib.Path'] = []
 
     def __init__(self, risitas_html, risitas_info, args, row):
         self.html_file_path = pathlib.Path()
@@ -842,7 +863,7 @@ class RisitasHtmlFile():
     ) -> None:
         """
         Create or append an html file, side effect is to
-        collect html_file_path to convert them to pdf
+        collect html_file_path in order to convert them to pdf
         """
         if append and not self.args.no_database:
             self.html_file_path = pathlib.Path(self.row[0][4])
@@ -854,7 +875,7 @@ class RisitasHtmlFile():
 
     def _write_html_template(
             self,
-            html_file: '_io.TextIOWrapper',
+            html_file,
             begin: bool = False,
             end: bool = False,
     ):
@@ -873,8 +894,8 @@ class RisitasHtmlFile():
             html_file.write(html)
         elif end:
             html = (
-            """</body>
-               </html>"""
+                """</body>
+                </html>"""
             )
             html_file.write(html)
 
@@ -902,7 +923,7 @@ class RisitasHtmlFile():
     def write_html(
             self,
     ) -> None:
-        """Produce an html file from the risitas soup"""
+        """Produce an html file from the risitas soup."""
         self._increment_html_file_name()
         with open(self.html_file_path, "w", encoding="utf-8") as html_file:
             self._write_html_template(html_file, begin=True, end=False)
@@ -912,6 +933,7 @@ class RisitasHtmlFile():
             logging.info("Wrote %s", self.html_file_path)
 
     def append_html(self) -> None:
+        """Append new chapters to an existing html file."""
         with open(self.html_file_path, encoding='utf-8') as html_file:
             soup = BeautifulSoup(html_file, features="lxml")
         for new_chapter in self.risitas_html:
@@ -925,7 +947,7 @@ class RisitasHtmlFile():
         )
 
 
-def download_risitas(args) -> List['pathlib.Path']:
+def download_risitas(args) -> List['pathlib.Path'] | List:
     """Download risitas"""
     page_links = parse_input_links(args.links)
     risitas_html_file = None
@@ -978,9 +1000,11 @@ def download_risitas(args) -> List['pathlib.Path']:
             )
     if risitas_html_file:
         return risitas_html_file.htmls_file_path
+    return []
 
 
 def main() -> None:
+    """Entry point of risiparse"""
     args = get_args()
     set_file_logging(args.output_dir, LOGGER, FMT)
     if args.clear_database:

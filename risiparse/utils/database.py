@@ -2,7 +2,7 @@
 
 """This module contains all the database logic"""
 
-from typing import List, Optional
+from typing import List
 import sqlite3
 import re
 import pathlib
@@ -55,7 +55,7 @@ def create_db() -> None:
     con.close()
 
 
-def read_db(page_link: str) -> List[Optional[tuple]]:
+def read_db(page_link: str):
     """Fetch recors from the database"""
     create_db()
     con = sqlite3.connect(DB_PATH)

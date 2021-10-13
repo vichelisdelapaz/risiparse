@@ -18,6 +18,7 @@ from risiparse import html_to_pdf, sites_selectors
 
 TODAY = datetime.date.today()
 
+
 def _replace_whitespaces(title: str) -> str:
     title_dashes = title.replace(" ", "-")
     return title_dashes
@@ -387,7 +388,7 @@ def parse_input_links(links: List[str]) -> List[str]:
 
 def set_file_logging(
         output_dir: 'pathlib.Path',
-        logger: 'logging.RootLogger',
+        logger: 'logging.Logger',
         format: str
 ) -> None:
     """Set up the logging to a file."""
