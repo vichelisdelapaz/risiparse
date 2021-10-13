@@ -827,7 +827,7 @@ class RisitasPostsDownload():
                 page,
                 total_pages
             )
-            self.log_posts_downloaded_and_duplicates()
+        self.log_posts_downloaded_and_duplicates()
         return self.posts.risitas_html
 
 
