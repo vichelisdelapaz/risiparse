@@ -505,44 +505,51 @@ class Posts():
             is_domain_webarchive
     ) -> bool:
         """Check if the given post is a risitas"""
-        is_author = self._check_post_author(
-            post,
-            self.args.no_match_author,
-            is_domain_webarchive
-        )
-        if not is_author and not is_domain_webarchive:
-            return False
-        if self.args.all_messages:
-            self.count += 1
-            self.risitas_html.append((risitas_html, ))
-            return False
-        contains_identifiers = check_post_identifiers(
-               post,
-               self.args.identifiers
-        )
-        is_short = check_post_length(post)
-        if contains_blockquote(risitas_html):
-            return False
-        contains_image = self._check_post_is_image(post)
-        if (
-                  not contains_identifiers and
-                  self.count > 1 and
-                  not contains_image
-                  and is_short
-        ):
-            return False
-        if is_short and not contains_image:
-            return False
-        is_duplicate = self._check_post_duplicates(
-               risitas_html,
-               contains_image
-        )
-        if is_duplicate:
-            first_lines = risitas_html.select_one('p').text[0:50].strip()
-            logging.error("The current post '%s' is a duplicate!", first_lines)
-            self.duplicates += 1
-            return False
-        return True
+        is_part_of_risitas = False
+        for _ in range(1):
+            is_author = self._check_post_author(
+                post,
+                self.args.no_match_author,
+                is_domain_webarchive
+            )
+            if not is_author and not is_domain_webarchive:
+                break
+            if self.args.all_messages:
+                self.count += 1
+                self.risitas_html.append((risitas_html, ))
+                break
+            contains_identifiers = check_post_identifiers(
+                post,
+                self.args.identifiers
+            )
+            is_short = check_post_length(post)
+            if contains_blockquote(risitas_html):
+                break
+            contains_image = self._check_post_is_image(post)
+            if (
+                    not contains_identifiers and
+                    self.count > 1 and
+                    not contains_image
+                    and is_short
+            ):
+                break
+            if is_short and not contains_image:
+                break
+            is_duplicate = self._check_post_duplicates(
+                risitas_html,
+                contains_image
+            )
+            if is_duplicate:
+                first_lines = risitas_html.select_one('p').text[0:50].strip()
+                logging.error(
+                    "The current post '%s' is a duplicate!",
+                    first_lines
+                )
+                self.duplicates += 1
+                break
+        else:
+            return not is_part_of_risitas
+        return is_part_of_risitas
 
     def get_posts(
             self,
