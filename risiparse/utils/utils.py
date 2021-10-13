@@ -2,7 +2,7 @@
 
 """This module just regroup some routines"""
 
-from typing import List, Type
+from typing import List, Type, Dict
 import tempfile
 import unicodedata
 import pathlib
@@ -87,75 +87,96 @@ def get_selectors_and_site(
     )
 
 
-def create_pdfs(
-        output_dir: 'pathlib.Path',
-        html_user: List['pathlib.Path'] = None,
-        html_download: List['pathlib.Path'] = None,
-        all_pdfs=False,
+def html_is_too_big(html: pathlib.Path, size: int = 3670016):
+    """Check if an html file is too big"""
+    return bool(html.stat().st_size >= size)
+
+
+def split_big_html(
+        html: pathlib.Path,
+        html_part_tmpdir: str,
+        splitted_pdfs: Dict[str, List[pathlib.Path]],
+        divs_step: int = 30
+):
+    """Split an html file into smaller htmls"""
+    (pathlib.Path(f"{html_part_tmpdir}") / "risitas-pdf").mkdir()
+    data = BeautifulSoup(
+        html.read_text(encoding='utf-8'), features="lxml"
+    )
+    divs = data.select("div")
+    start = 0
+    end = divs_step
+    for _ in range(0, len(divs), divs_step):
+        file_path = pathlib.Path(
+            f"{html_part_tmpdir}/{html.name}"
+            f"-part-{start}-to-{end}.html"
+        )
+        with open(file_path, "w", encoding='utf-8') as file:
+            for div in divs[start:end]:
+                file.write(div.decode())
+                logging.debug("Appended div to %s", file_path)
+        pdf_path = str(html).replace("html", "pdf")
+        if pdf_path not in splitted_pdfs:
+            splitted_pdfs[pdf_path] = [file_path]
+        else:
+            splitted_pdfs[pdf_path].append(file_path)
+        start = end
+        end += divs_step
+        file_path = pathlib.Path(f"{html}-part-{start}-to-{end}.html")
+    return splitted_pdfs
+
+
+def merge_pdfs(
+        splitted_pdfs: Dict[str, List[pathlib.Path]],
+        html_part_tmpdir: str
 ) -> None:
-    """Create pdfs from a list of htmls"""
-    html_folder_path = output_dir / "risitas-html"
-    htmls = []
-    pdf_to_create = dict()
-    if not html_user and not html_download and all_pdfs:
-        htmls = list(html_folder_path.glob("*.html"))
-    elif html_user:
-        htmls = html_user
-    elif html_download:
-        htmls = html_download
-    # Testing if htmls are too big
-    html_part_tmpdir = tempfile.TemporaryDirectory()
-    (pathlib.Path(f"{html_part_tmpdir.name}") / "risitas-pdf").mkdir()
-    for html in htmls:
-        if html.stat().st_size >= 3670016:
-            logging.info(
-                "The html file %s is too big and will be splitted "
-                "into multiple parts, then pdfs will be created and "
-                "merged back into one single pdf.", html
-            )
-            data = BeautifulSoup(
-                html.read_text(encoding='utf-8'), features="lxml"
-            )
-            divs = data.select("div")
-            start = 0
-            end = 30
-            for _ in range(0, len(divs), 30):
-                file_path = pathlib.Path(
-                    f"{html_part_tmpdir.name}/{html.name}"
-                    f"-part-{start}-to-{end}.html"
-                )
-                with open(file_path, "w", encoding='utf-8') as f:
-                    for count, div in enumerate(divs[start:end], 1):
-                        f.write(div.decode())
-                        logging.debug("Appended div to %s", file_path)
-                pdf_path = str(html).replace("html", "pdf")
-                if pdf_path not in pdf_to_create:
-                    pdf_to_create[pdf_path] = [file_path]
-                else:
-                    pdf_to_create[pdf_path].append(file_path)
-                start = end
-                end += 30
-                file_path = pathlib.Path(f"{html}-part-{start}-to-{end}.html")
-            htmls.remove(html)
+    """Create pdfs from smaller htmls and merge them back"""
     app = html_to_pdf.QtWidgets.QApplication([])
-    if htmls:
-        page = html_to_pdf.PdfPage(output_dir)
-        logging.info("Creating pdfs...")
-        page.convert(htmls)
-        app.exec()
-    if pdf_to_create:
-        for k, v in pdf_to_create.items():
+    if splitted_pdfs:
+        for pdf_file_name, htmls_part in splitted_pdfs.items():
             merger = PdfFileMerger()
-            output_dir = pathlib.Path(f"{html_part_tmpdir.name}")
+            output_dir = pathlib.Path(f"{html_part_tmpdir}")
             page = html_to_pdf.PdfPage(output_dir)
-            page.convert(v)
+            page.convert(htmls_part)
             app.exec()
             pdfs_to_merge = page.get_pdfs_path()
             for filename in pdfs_to_merge:
                 merger.append(filename)
-            with open(f"{k}", 'w', encoding='utf-8') as f:
-                merger.write(f)
-                logging.info("Merged pdf parts into %s", k)
+            with open(f"{pdf_file_name}", 'wb') as final_pdf:
+                merger.write(final_pdf)
+                logging.info("Merged pdf parts into %s", pdf_file_name)
+
+
+def create_pdfs(
+        output_dir: 'pathlib.Path',
+        htmls_file_path: List['pathlib.Path'],
+) -> None:
+    """Create pdfs from a list of htmls"""
+    splitted_pdfs: Dict[str, List[pathlib.Path]] = {}
+    html_folder_path = output_dir / "risitas-html"
+    if not htmls_file_path:
+        htmls_file_path = list(html_folder_path.glob("*.html"))
+    with tempfile.TemporaryDirectory() as html_part_tmpdir:
+        for html in htmls_file_path:
+            if html_is_too_big(html):
+                logging.info(
+                    "The html file %s is too big and will be splitted "
+                    "into multiple parts, then pdfs will be created and "
+                    "merged back into one single pdf.", html
+                )
+                splitted_pdfs = splitted_pdfs | split_big_html(
+                    html,
+                    html_part_tmpdir,
+                    splitted_pdfs
+                )
+                htmls_file_path.remove(html)
+        merge_pdfs(splitted_pdfs, html_part_tmpdir)
+    if htmls_file_path:
+        app = html_to_pdf.QtWidgets.QApplication([])
+        page = html_to_pdf.PdfPage(output_dir)
+        logging.info("Creating pdfs...")
+        page.convert(htmls_file_path)
+        app.exec()
 
 
 def read_links(links_file: pathlib.Path) -> List[str]:
@@ -214,7 +235,8 @@ def get_args() -> argparse.Namespace:
     # Pdfs to create
     parser.add_argument(
         "--create-pdfs",
-        nargs='+',
+        nargs='?',
+        default=[],
         help=(
             "A list of html files path to create pdfs from "
             "If this option is not specified with --no-download "
@@ -401,6 +423,7 @@ def write_html_template(
         begin: bool = False,
         end: bool = False,
 ):
+    """Write html template"""
     if begin:
         html = (
             """<!DOCTYPE html>
