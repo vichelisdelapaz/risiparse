@@ -6,6 +6,8 @@
 # https://uran198.github.io/en/python/2016/07/12/colorful-python-logging.html
 
 import logging
+import pathlib
+import datetime
 import copy
 import colorama
 
@@ -15,6 +17,8 @@ LOG_COLORS = {
     logging.CRITICAL: colorama.Fore.RED,
     logging.WARNING: colorama.Fore.YELLOW
 }
+
+TODAY = datetime.date.today()
 
 
 class ColorFormatter(logging.Formatter):
@@ -33,3 +37,16 @@ class ColorFormatter(logging.Formatter):
             new_record.levelname = f"{color_begin}{level}{color_end}"
         # now we can let standart formatting take care of the rest
         return super().format(new_record, *args, **kwargs)
+
+
+def set_file_logging(
+        output_dir: pathlib.Path,
+        logger: 'logging.Logger',
+        fmt: str
+) -> None:
+    """Set up the logging to a file."""
+    log_file = output_dir / f"risiparse-{TODAY}.log"
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(fmt))
+    logger.addHandler(file_handler)

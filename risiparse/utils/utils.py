@@ -9,14 +9,12 @@ import pathlib
 import re
 import argparse
 import logging
-import datetime
 
 from urllib.parse import urlparse
 from PyPDF2 import PdfFileMerger
 from bs4 import BeautifulSoup
 from risiparse import html_to_pdf, sites_selectors
-
-TODAY = datetime.date.today()
+from risiparse.sites_selectors import Webarchive
 
 
 def _replace_whitespaces(title: str) -> str:
@@ -385,14 +383,39 @@ def parse_input_links(links: List[str]) -> List[str]:
     return page_links
 
 
-def set_file_logging(
-        output_dir: 'pathlib.Path',
-        logger: 'logging.Logger',
-        fmt: str
-) -> None:
-    """Set up the logging to a file."""
-    log_file = output_dir / f"risiparse-{TODAY}.log"
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(logging.Formatter(fmt))
-    logger.addHandler(file_handler)
+def replace_webarchive_youtube_frame(
+    domain,
+    risitas_html
+) -> List[str]:
+    """
+    Youtube frames are displayed in webarchive
+    instead of a link, this fix it
+    """
+    if domain == Webarchive.SITE.value:
+        risitas_html = replace_youtube_frames(risitas_html)
+    return risitas_html
+
+
+def write_html_template(
+        html_file,
+        begin: bool = False,
+        end: bool = False,
+):
+    if begin:
+        html = (
+            """<!DOCTYPE html>
+            <html lang='fr'>
+            <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' \
+            content='width=device-width, initial-scale=1.0'>
+            <title>Risitas</title>
+            </head>
+            <body>"""
+        )
+    elif end:
+        html = (
+            """</body>
+              </html>"""
+        )
+    html_file.write(html)

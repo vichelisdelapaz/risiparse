@@ -22,12 +22,23 @@ from risiparse.utils.utils import (
     create_pdfs,
     parse_input_links,
     get_args,
-    strip_webarchive_link,
-    replace_youtube_frames,
-    contains_webarchive,
-    set_file_logging
+    write_html_template
 )
-from risiparse.utils.log import ColorFormatter
+from risiparse.utils.utils_page_downloader import (
+    get_page_link,
+    get_webarchive_link,
+    get_webarchive_page_link,
+    image_exists,
+    change_img_src_path
+)
+from risiparse.utils.utils_posts import (
+    check_post_length,
+    check_post_identifiers,
+    contains_blockquote,
+    print_chapter_added,
+    contains_paragraph
+)
+from risiparse.utils.log import ColorFormatter, set_file_logging
 from risiparse.utils.database import update_db, read_db, delete_db
 
 LOGGER = logging.getLogger()
@@ -84,12 +95,12 @@ class PageDownloader():
     ) -> Optional['BeautifulSoup']:
         """Download the soup of the current page"""
         if not self.webarchive:
-            page_link = self._get_page_link(
+            page_link = get_page_link(
                 page_number,
                 page_link
             )
         else:
-            webarchive_link = self._get_webarchive_page_link(
+            webarchive_link = get_webarchive_page_link(
                 page_number,
                 page_link
             )
@@ -129,55 +140,6 @@ class PageDownloader():
         ).attrs["src"]
         return img_link
 
-    def _change_src_path(
-            self,
-            img: 'BeautifulSoup',
-            img_folder_path: pathlib.Path,
-            file_name: str
-    ) -> None:
-        img.attrs["src"] = str(img_folder_path) + "/" + file_name
-
-    def _image_exists(
-            self,
-            file_name: str,
-            img_folder: pathlib.Path
-    ) -> bool:
-        img_path = img_folder / file_name
-        return bool(img_path.exists())
-
-    def _get_page_link(
-            self,
-            page_number: int,
-            page_link: str,
-    ) -> str:
-        page_link_number = [
-               m.span() for m in re.finditer(r"\d*\d", page_link)
-        ]
-        page_link = (
-               page_link[:page_link_number[3][0]]
-               + str(page_number) +
-               page_link[page_link_number[3][1]:]
-        )
-        return page_link
-
-    def _get_webarchive_page_link(
-            self,
-            page_number: int,
-            page_link: str
-    ) -> Optional[str]:
-        if page_number == 1:
-            return None
-        page_link_splitted = page_link.rsplit("/")
-        if len(page_link) == 11:
-            page_link = (
-                "/".join(page_link_splitted[:-2]) + f"/{page_number}/"
-            )
-        else:
-            page_link = (
-                "/".join(page_link_splitted[:-1]) + f"/{page_number}/"
-            )
-        return page_link
-
     def get_webarchive_img(
             self,
             link: str,
@@ -210,23 +172,6 @@ class PageDownloader():
             return None
         return image
 
-    def get_webarchive_link(
-            self,
-            img: BeautifulSoup
-    ) -> str:
-        """Strip the redundant part in the webarchive link
-           to get a clean url
-        """
-        archive_link = img.attrs["src"]
-        contains_webarchive_link = contains_webarchive(
-            archive_link
-        )
-        if contains_webarchive_link:
-            link = strip_webarchive_link(archive_link)
-        else:
-            link = archive_link
-        return link
-
     def download_images(
             self,
             soup: BeautifulSoup,
@@ -239,11 +184,11 @@ class PageDownloader():
             imgs = page[0].select("img")
             for img in imgs:
                 if self.webarchive:
-                    link = self.get_webarchive_link(img)
+                    link = get_webarchive_link(img)
                 else:
                     link = img.attrs["src"]
                 file_name = link[link.rfind("/"):][1:]
-                if not self._image_exists(file_name, img_folder_path):
+                if not image_exists(file_name, img_folder_path):
                     logging.info(
                         "Image not in cache, downloading "
                         "%s", file_name
@@ -263,7 +208,7 @@ class PageDownloader():
                     file_name = image.url[image.url.rfind("/"):][1:]
                     img_file_path = img_folder_path / file_name
                     img_file_path.write_bytes(image.content)
-                self._change_src_path(img, img_folder_path, file_name)
+                change_img_src_path(img, img_folder_path, file_name)
 
 
 class RisitasInfo():
@@ -406,32 +351,6 @@ class Posts():
                     return True
         return bool(post_author in self.authors)
 
-    def _check_post_length(self, post: BeautifulSoup) -> bool:
-        """Check the post length to see if this is a chapter
-        or an offtopic message"""
-        paragraph = post.text.strip().replace("\n", "")
-        return bool(len(paragraph) < 1000)
-
-    def _check_post_identifiers(
-            self,
-            post: BeautifulSoup,
-            identifiers: List
-    ) -> bool:
-        identifiers_joined = "|".join(identifiers)
-        regexp = re.compile(identifiers_joined, re.IGNORECASE)
-        try:
-            post_paragraph_text = post.select_one("p").text[0:200]
-        except AttributeError as text_error:
-            logging.exception(
-                "The post doesn't contains text, probably some image %s",
-                text_error
-            )
-            return False
-        contains_identifiers = regexp.search(post_paragraph_text)
-        return bool(
-            contains_identifiers and not post.select_one("blockquote")
-        )
-
     def _check_post_duplicates(
             self,
             risitas_html: 'BeautifulSoup',
@@ -454,9 +373,6 @@ class Posts():
                 self.risitas_raw_text[-i][0:100].lower()
             )
         return ret_val
-
-    def _contains_blockquote(self, risitas_html: BeautifulSoup) -> bool:
-        return bool(risitas_html.select("blockquote"))
 
     def _check_post_is_image(self, soup: BeautifulSoup) -> bool:
         ret_val = False
@@ -529,32 +445,6 @@ class Posts():
                 img.attrs["src"] = img.attrs["alt"]
         return image_soup
 
-    def _print_chapter_added(
-            self,
-            risitas_html: BeautifulSoup
-    ) -> None:
-        try:
-            pretty_print = risitas_html.select_one(
-                'p'
-            ).text[0:50].strip().replace("\n", "")
-            if not pretty_print and len(risitas_html.select("p")) > 1:
-                pretty_print = risitas_html.select("p")[1].text[
-                    0:50].strip().replace("\n", "")
-            if not pretty_print:
-                logging.debug(
-                    "Added some images, maybe chapters in screenshot?"
-                )
-            else:
-                logging.info(
-                    "Adding "
-                    "%s", pretty_print
-                )
-        except AttributeError as jvarchive_image:
-            logging.exception(
-                "Can't log text because this "
-                "is an image from jvarchive %s", jvarchive_image
-            )
-
     def _get_webarchive_post_html(
             self,
             post: BeautifulSoup
@@ -608,14 +498,6 @@ class Posts():
                 skip_post = True
         return skip_post
 
-    def _contains_paragraph(self, risitas_html) -> bool:
-        contains_paragraph = False
-        try:
-            contains_paragraph = bool(risitas_html.select("p"))
-        except AttributeError:
-            pass
-        return contains_paragraph
-
     def is_risitas_post(
             self,
             post,
@@ -634,13 +516,12 @@ class Posts():
             self.count += 1
             self.risitas_html.append((risitas_html, ))
             return False
-        contains_identifiers = self._check_post_identifiers(
+        contains_identifiers = check_post_identifiers(
                post,
                self.args.identifiers
         )
-        is_short = self._check_post_length(post)
-        contains_blockquote = self._contains_blockquote(risitas_html)
-        if contains_blockquote:
+        is_short = check_post_length(post)
+        if contains_blockquote(risitas_html):
             return False
         contains_image = self._check_post_is_image(post)
         if (
@@ -686,8 +567,7 @@ class Posts():
             risitas_html = post.select_one(
                 self.risitas_info.selectors.RISITAS_TEXT_SELECTOR.value
             )
-            contains_paragraph = self._contains_paragraph(risitas_html)
-            if is_domain_webarchive and not contains_paragraph:
+            if is_domain_webarchive and not contains_paragraph(risitas_html):
                 risitas_html = self._get_webarchive_post_html(post)
             contains_image = self._check_post_is_image(post)
             if not self.is_risitas_post(
@@ -696,7 +576,7 @@ class Posts():
                     is_domain_webarchive
             ):
                 continue
-            self._print_chapter_added(risitas_html)
+            print_chapter_added(risitas_html)
             self.added_message = True
             self.risitas_html.append((risitas_html, contains_image))
             self.risitas_raw_text.append(risitas_html.text)
@@ -723,19 +603,6 @@ class RisitasPostsDownload():
         """
         if domain == Webarchive.SITE.value:
             self.args.no_database = True
-
-    def replace_webarchive_youtube_frame(
-            self,
-            domain,
-            risitas_html
-    ) -> List[str]:
-        """
-        Youtube frames are displayed in webarchive
-        instead of a link, this fix it
-        """
-        if domain == Webarchive.SITE.value:
-            risitas_html = replace_youtube_frames(risitas_html)
-        return risitas_html
 
     def get_risitas_info(
             self,
@@ -874,32 +741,6 @@ class RisitasHtmlFile():
             self.write_html()
             self.htmls_file_path.append(self.html_file_path)
 
-    def _write_html_template(
-            self,
-            html_file,
-            begin: bool = False,
-            end: bool = False,
-    ):
-        if begin:
-            html = (
-                   """<!DOCTYPE html>
-                   <html lang='fr'>
-                   <head>
-                   <meta charset='UTF-8'>
-                   <meta name='viewport' \
-                   content='width=device-width, initial-scale=1.0'>
-                   <title>Risitas</title>
-                   </head>
-                   <body>"""
-            )
-            html_file.write(html)
-        elif end:
-            html = (
-                """</body>
-                </html>"""
-            )
-            html_file.write(html)
-
     def _increment_html_file_name(self) -> None:
         title_slug = slugify(self.risitas_info.title, title=True)
         author_slug = slugify(self.risitas_info.author, title=False)
@@ -927,10 +768,10 @@ class RisitasHtmlFile():
         """Produce an html file from the risitas soup."""
         self._increment_html_file_name()
         with open(self.html_file_path, "w", encoding="utf-8") as html_file:
-            self._write_html_template(html_file, begin=True, end=False)
+            write_html_template(html_file, begin=True, end=False)
             for paragraph in self.risitas_html:
                 html_file.write(str(paragraph[0]).replace("’", "'"))
-            self._write_html_template(html_file, begin=False, end=True)
+            write_html_template(html_file, begin=False, end=True)
             logging.info("Wrote %s", self.html_file_path)
 
     def append_html(self) -> None:
