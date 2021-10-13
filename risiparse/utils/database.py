@@ -184,7 +184,7 @@ def update_db(
                     )
                 )
                 logging.info(
-                    "A new risitas has been inserted in the database! "
+                    "A new risitas has been inserted in the database "
                     "at %s", DB_PATH
                 )
                 logging.debug(
