@@ -132,12 +132,11 @@ def update_db(
                     "Id: %d "
                     "Title: %s "
                     "Current page: %d "
-                    "Total pages : %d", (
-                        cursor.lastrowid,
-                        title,
-                        current_page,
-                        total_pages,
-                    )
+                    "Total pages : %d",
+                    cursor.lastrowid,
+                    title,
+                    current_page,
+                    total_pages,
                 )
                 cursor_existing_row = con.execute(
                     '''select name from authors where id = ?''',
@@ -192,12 +191,11 @@ def update_db(
                     "Id: %d "
                     "Title: %s "
                     "Current page: %d "
-                    "Total pages : %d", (
-                        cursor.lastrowid,
-                        title,
-                        current_page,
-                        total_pages,
-                    )
+                    "Total pages : %d",
+                    cursor.lastrowid,
+                    title,
+                    current_page,
+                    total_pages,
                 )
                 for author in authors:
                     con.execute(
