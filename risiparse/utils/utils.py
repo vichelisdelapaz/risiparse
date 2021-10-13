@@ -80,14 +80,13 @@ def get_selectors_and_site(
     domain = get_domain(link)
     if domain == "jeuxvideo.com":
         return sites_selectors.Jvc
-    elif domain == "jvarchive.com":
+    if domain == "jvarchive.com":
         return sites_selectors.Jvarchive
-    elif domain == "web.archive.org":
+    if domain == "web.archive.org":
         return sites_selectors.Webarchive
-    else:
-        raise ValueError(
-            f"The domain in the {link} doesn't match any domain supported"
-        )
+    raise ValueError(
+        f"The domain in the {link} doesn't match any domain supported!"
+    )
 
 
 def create_pdfs(
@@ -156,7 +155,7 @@ def create_pdfs(
             pdfs_to_merge = page.get_pdfs_path()
             for filename in pdfs_to_merge:
                 merger.append(filename)
-            with open(f"{k}", 'w') as f:
+            with open(f"{k}", 'w', encoding='utf-8') as f:
                 merger.write(f)
                 logging.info("Merged pdf parts into %s", k)
 
@@ -389,11 +388,11 @@ def parse_input_links(links: List[str]) -> List[str]:
 def set_file_logging(
         output_dir: 'pathlib.Path',
         logger: 'logging.Logger',
-        format: str
+        fmt: str
 ) -> None:
     """Set up the logging to a file."""
     log_file = output_dir / f"risiparse-{TODAY}.log"
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(logging.Formatter(format))
+    file_handler.setFormatter(logging.Formatter(fmt))
     logger.addHandler(file_handler)
