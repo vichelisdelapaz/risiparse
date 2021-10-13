@@ -369,7 +369,7 @@ class Posts():
         self.args = args
         self.authors: List[str] = []
         self.past_message = False
-        self.message_cursor = 0
+        self.post_cursor = 0
         self.count = 0
         self.duplicates = 0
 
@@ -597,13 +597,13 @@ class Posts():
     def _skip_post(
             self,
             append: bool,
-            message_cursor: int,
-            message_cursor_db: int,
+            post_cursor: int,
+            post_cursor_db: int,
     ) -> bool:
         skip_post = False
         if append and not self.past_message:
-            if message_cursor <= message_cursor_db:
-                if message_cursor == 19:
+            if post_cursor <= post_cursor_db:
+                if post_cursor == 19:
                     self.past_message = True
                 skip_post = True
         return skip_post
@@ -668,7 +668,7 @@ class Posts():
             soup: BeautifulSoup,
             risitas_authors: List,
             append: bool,
-            message_cursor_db: int,
+            post_cursor_db: int,
     ) -> None:
         """
         Check conditions to see if it's a post relevant to the risitas
@@ -680,8 +680,8 @@ class Posts():
         if not self.authors:
             self.authors = risitas_authors
         self.added_message = False
-        for message_cursor, post in enumerate(posts):
-            if self._skip_post(append, message_cursor, message_cursor_db):
+        for post_cursor, post in enumerate(posts):
+            if self._skip_post(append, post_cursor, post_cursor_db):
                 continue
             risitas_html = post.select_one(
                 self.risitas_info.selectors.RISITAS_TEXT_SELECTOR.value
@@ -701,7 +701,7 @@ class Posts():
             self.risitas_html.append((risitas_html, contains_image))
             self.risitas_raw_text.append(risitas_html.text)
             self.count += 1
-            self.message_cursor = message_cursor
+            self.post_cursor = post_cursor
 
 
 class RisitasPostsDownload():
@@ -714,7 +714,7 @@ class RisitasPostsDownload():
         self.posts = None
         self.authors = []
         self.append = False
-        self.message_cursor = 0
+        self.post_cursor = 0
 
     def disable_database_webarchive(self, domain) -> None:
         """
@@ -757,7 +757,7 @@ class RisitasPostsDownload():
         )
         return risitas_info
 
-    def _set_init_message_cursor(
+    def _set_init_post_cursor(
         self,
         row: tuple[str]
     ) -> None:
@@ -769,19 +769,19 @@ class RisitasPostsDownload():
                 self.append = True
                 self.message_cursor = row[0][7]
             else:
-                self.message_cursor = 0
+                self.post_cursor = 0
 
-    def _set_post_message_cursor(
+    def _set_post_cursor(
         self,
         page: int,
         total_pages: int,
     ) -> None:
         if (
-                self.posts.message_cursor and
+                self.posts.post_cursor and
                 page + 1 == total_pages and
                 self.posts.added_message
         ):
-            self.message_cursor = self.posts.message_cursor
+            self.post_cursor = self.posts.post_cursor
 
     def log_posts_downloaded_and_duplicates(
             self,
@@ -807,7 +807,7 @@ class RisitasPostsDownload():
     ):
         """Download all the relevant posts for the current risitas"""
         for page in range(total_pages):
-            self._set_init_message_cursor(row)
+            self._set_init_post_cursor(row)
             if not self.page_number:
                 self.page_number = 1
             soup = self.page_downloader.download_topic_page(
@@ -820,10 +820,10 @@ class RisitasPostsDownload():
                 soup,
                 self.authors,
                 self.append,
-                self.message_cursor,
+                self.post_cursor,
             )
             self.page_number += 1
-            self._set_post_message_cursor(
+            self._set_post_cursor(
                 page,
                 total_pages
             )
@@ -990,14 +990,11 @@ def download_risitas(args) -> List['pathlib.Path'] | List:
         )
         if not args.no_database:
             update_db(
-                domain,
                 risitas_info.title,
                 link,
                 risitas_html_file.html_file_path,
                 risitas_info.total_pages,
-                risitas_info.total_pages,
-                posts_downloader.message_cursor,
-                posts_downloader.authors,
+                posts_downloader.post_cursor,
             )
     if risitas_html_file:
         return risitas_html_file.htmls_file_path
