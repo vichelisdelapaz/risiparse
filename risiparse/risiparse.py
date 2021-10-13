@@ -31,6 +31,7 @@ from risiparse.utils.log import ColorFormatter
 from risiparse.utils.database import update_db, read_db, delete_db
 
 LOGGER = logging.getLogger()
+LOGGER.handlers.clear()
 LOGGER.setLevel(logging.DEBUG)
 
 FMT = '%(asctime)s:%(levelname)s: %(message)s'
