@@ -2,13 +2,31 @@
 
 """This module contains all the database logic"""
 
-from typing import List
 import sqlite3
 import re
 import pathlib
 import logging
+import sys
 
-DB_PATH = pathlib.Path(__file__).parent.parent.parent / "risiparse.db"
+HOME = pathlib.Path.home()
+
+
+if sys.platform == "win32":
+    (HOME / "AppData/Roaming" / 'risiparse').mkdir(exist_ok=True)
+    DB_PATH = HOME / "AppData/Roaming" / 'risiparse' / 'risiparse.db'
+elif sys.platform == "linux":
+    (HOME / ".local/share" / 'risiparse').mkdir(exist_ok=True)
+    DB_PATH = HOME / ".local/share" / 'risiparse' / 'risiparse.db'
+elif sys.platform == "darwin":
+    (HOME / "Library/Application Support" / 'risiparse').mkdir(exist_ok=True)
+    DB_PATH = (
+        HOME /
+        "Library/Application Support" /
+        'risiparse' /
+        'risiparse.db'
+    )
+
+logging.debug("The database is at : '%s'", DB_PATH)
 
 
 def _replace_page_number(page_link: str) -> str:
@@ -31,70 +49,46 @@ def create_db() -> None:
     """Create the database"""
     con = sqlite3.connect(DB_PATH)
     try:
-        with con:
-            con.execute(
-                '''create table if not exists risitas
-                (id integer primary key autoincrement,
-                domain varchar,
-                title varchar,
-                page_link varchar,
-                file_path varchar,
-                total_pages integer,
-                current_page integer,
-                message_cursor integer)'''
-            )
-            con.execute(
-                '''create table if not exists authors
-                (id integer primary key autoincrement,
-                name varchar,
-                risitas_id integer,
-                foreign key(risitas_id) references risitas(id))'''
-            )
+        con.execute(
+            '''create table if not exists risitas
+            (id integer primary key autoincrement,
+            title varchar,
+            page_link varchar,
+            file_path varchar,
+            total_pages integer,
+            post_cursor integer)'''
+        )
     except sqlite3.OperationalError as operational_error:
         logging.exception(operational_error)
     con.close()
 
 
 def read_db(page_link: str):
-    """Fetch recors from the database"""
+    """Fetch records from the database"""
     create_db()
     con = sqlite3.connect(DB_PATH)
     page_link_normalized = _replace_page_number(page_link)
     try:
-        with con:
-            cursor = con.execute(
-                '''select * from risitas where page_link LIKE ? limit 1''',
-                (page_link_normalized, )
-            )
-            risitas_row = cursor.fetchone()
-            rows = [risitas_row]
-            if risitas_row:
-                cursor_author = con.execute(
-                    '''select name from authors where risitas_id = ?''',
-                    (risitas_row[0], )
-                )
-                authors_row = cursor_author.fetchall()
-                rows.append(authors_row)
+        cursor = con.execute(
+            '''select * from risitas where page_link LIKE ? limit 1''',
+            (page_link_normalized, )
+        )
+        row = cursor.fetchone()
     except sqlite3.OperationalError as operational_error:
         logging.exception(operational_error)
     con.close()
-    return rows
+    return row
 
 
 def update_db(
-        domain: str,
         title: str,
         page_link: str,
         file_path: 'pathlib.Path',
         total_pages: int,
-        current_page: int,
-        message_cursor: int,
-        authors: List,
+        post_cursor: int,
 ) -> None:
     """Updates records in the database"""
     create_db()
-    # Need to handle the updates of existing rows
-    file_path_str = str(file_path)
     con = sqlite3.connect(DB_PATH)
     page_link_normalized = _replace_page_number(page_link)
     cursor_existing_row = con.execute(
@@ -106,58 +100,33 @@ def update_db(
             with con:
                 cursor = con.execute(
                     '''UPDATE risitas
-                    SET domain = ?,
-                    title = ?,
+                    SET title = ?,
                     page_link = ?,
                     file_path = ?,
                     total_pages = ?,
-                    current_page = ?,
-                    message_cursor = ?
+                    post_cursor = ?
                     WHERE id = ?''',
                     (
-                        domain,
                         title,
                         page_link,
-                        file_path_str,
+                        str(file_path),
                         total_pages,
-                        current_page,
-                        message_cursor,
+                        post_cursor,
                         cursor_existing_row[0],
                     )
                 )
+                con.commit()
                 logging.info(
                     "A risitas has been updated in the database!"
                 )
                 logging.debug(
                     "Id: %d "
                     "Title: %s "
-                    "Current page: %d "
                     "Total pages : %d",
                     cursor.lastrowid,
                     title,
-                    current_page,
                     total_pages,
                 )
-                cursor_existing_row = con.execute(
-                    '''select name from authors where id = ?''',
-                    (cursor_existing_row[0], )
-                ).fetchall()
-                stored_authors = [author[0] for author in cursor_existing_row]
-                for author in authors:
-                    if author not in stored_authors:
-                        con.execute(
-                            '''INSERT INTO authors
-                            (name, risitas_id)
-                            VALUES (?, ?)''',
-                            (
-                                author,
-                                cursor_existing_row[0],
-                            )
-                        )
-                        logging.debug(
-                            "Author : %s "
-                            "has been inserted in the database!", author
-                        )
         except sqlite3.OperationalError as operational_error:
             logging.exception(operational_error)
     else:
@@ -165,24 +134,21 @@ def update_db(
             with con:
                 cursor = con.execute(
                     '''INSERT INTO risitas
-                    (domain,
-                    title,
+                    (title,
                     page_link,
                     file_path,
                     total_pages,
-                    current_page,
-                    message_cursor)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                    post_cursor)
+                    VALUES (?, ?, ?, ?, ?)''',
                     (
-                        domain,
                         title,
                         page_link,
-                        file_path_str,
+                        str(file_path),
                         total_pages,
-                        current_page,
-                        message_cursor,
+                        post_cursor,
                     )
                 )
+                con.commit()
                 logging.info(
                     "A new risitas has been inserted in the database "
                     "at %s", DB_PATH
@@ -190,27 +156,11 @@ def update_db(
                 logging.debug(
                     "Id: %d "
                     "Title: %s "
-                    "Current page: %d "
                     "Total pages : %d",
                     cursor.lastrowid,
                     title,
-                    current_page,
                     total_pages,
                 )
-                for author in authors:
-                    con.execute(
-                        '''INSERT INTO authors
-                        (name, risitas_id)
-                        VALUES (?, ?)''',
-                        (
-                            author,
-                            cursor.lastrowid,
-                        )
-                    )
-                    logging.debug(
-                        "Author : %s "
-                        "has been inserted in the database!", author
-                    )
         except sqlite3.OperationalError as operational_error:
             logging.exception(operational_error)
     con.close()

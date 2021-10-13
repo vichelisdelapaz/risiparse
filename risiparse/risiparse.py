@@ -759,15 +759,15 @@ class RisitasPostsDownload():
 
     def _set_init_post_cursor(
         self,
-        row: tuple[str]
+        row
     ) -> None:
         """Set the post cursor for the first time"""
         if not self.args.no_database:
-            if row[0]:
+            if row:
                 if not self.page_number:
-                    self.page_number = row[0][6]
+                    self.page_number = row[4]
                 self.append = True
-                self.message_cursor = row[0][7]
+                self.post_cursor = row[5]
             else:
                 self.post_cursor = 0
 
@@ -838,8 +838,8 @@ def get_database_risitas_page(row, total_pages: int) -> int:
     this will output 3 -> 3 pages to download posts.
     If no database return the page number given by risitas info
     """
-    if row[0]:
-        risitas_database_pages = row[0][6]
+    if row:
+        risitas_database_pages = row[4]
         total_pages = (
             total_pages - risitas_database_pages + 1
         )
@@ -867,7 +867,7 @@ class RisitasHtmlFile():
         collect html_file_path in order to convert them to pdf
         """
         if append and not self.args.no_database:
-            self.html_file_path = pathlib.Path(self.row[0][4])
+            self.html_file_path = pathlib.Path(self.row[3])
             self.htmls_file_path.append(self.html_file_path)
             self.append_html()
         else:
@@ -959,7 +959,7 @@ def download_risitas(args) -> List['pathlib.Path'] | List:
         risitas_info = posts_downloader.get_risitas_info(link, domain)
         posts_downloader.disable_database_webarchive(domain)
         total_pages = risitas_info.total_pages
-        row = [()]
+        row = None
         if not args.no_database:
             row = read_db(link)
             total_pages = get_database_risitas_page(
