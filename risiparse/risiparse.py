@@ -356,42 +356,38 @@ class Posts():
 
     def __init__(
             self,
-            selectors: BeautifulSoup,
+            risitas_info: 'RisitasInfo',
             downloader: PageDownloader,
-            domain: str,
-            all_messages: bool = False,
-            no_resize_images: bool = False,
+            args: 'argparse.Namespace',
     ):
         self.risitas_html: List['BeautifulSoup'] = []
         self.risitas_raw_text: List[str] = []
-        self.count = 0
-        self.duplicates = 0
-        self.selectors = selectors
-        self.all_messages = all_messages
         self.downloader = downloader
-        self.no_resize_images = no_resize_images
+        self.risitas_info = risitas_info
+        self.args = args
         self.authors: List[str] = []
-        self.domain = domain
-        self.webarchive = bool(domain == Webarchive.SITE.value)
         self.past_message = False
         self.message_cursor = 0
+        self.count = 0
+        self.duplicates = 0
 
     def _check_post_author(
             self,
             post: BeautifulSoup,
             no_match_author: bool,
+            is_web_archive: bool
     ) -> bool:
         # This is needed cuz deleted accounts are not handled
         # the same way for whatever reason...
         try:
             post_author = post.select_one(
-                self.selectors.AUTHOR_SELECTOR.value
+                self.risitas_info.selectors.AUTHOR_SELECTOR.value
             ).text.strip()
         except AttributeError:
-            if not self.webarchive:
+            if not is_web_archive:
                 logging.debug("Author deleted his account")
                 post_author = post.select_one(
-                    self.selectors.DELETED_AUTHOR_SELECTOR.value
+                    self.risitas_info.selectors.DELETED_AUTHOR_SELECTOR.value
                 ).text.strip()
             else:
                 return False
@@ -463,7 +459,7 @@ class Posts():
     def _check_chapter_image(self, soup: BeautifulSoup) -> bool:
         ret_val = False
         paragraphs = soup.select("p")
-        if not paragraphs and self.domain == Jvarchive.SITE.value:
+        if not paragraphs and self.risitas_info.domain == Jvarchive.SITE.value:
             link = soup.select("a")
             if link:
                 return True
@@ -473,7 +469,9 @@ class Posts():
                 if (
                         len(
                             soup.select(
-                                self.selectors.NOELSHACK_IMG_SELECTOR.value
+                                self.risitas_info.
+                                selectors.
+                                NOELSHACK_IMG_SELECTOR.value
                             )
                         ) >= 3 and not soup.select("blockquote") and
                         len(soup.text.strip()) < 300
@@ -485,7 +483,10 @@ class Posts():
                 if (
                         len(
                             soup.select(
-                                self.selectors.NOELSHACK_IMG_SELECTOR.value
+                                self.
+                                risitas_info.
+                                selectors.
+                                NOELSHACK_IMG_SELECTOR.value
                             )
                         ) >= 3 and not soup.select("blockquote") and
                         len(soup.text.strip()) < 300
@@ -497,7 +498,9 @@ class Posts():
 
     def _get_fullscale_image(self, soup: BeautifulSoup) -> BeautifulSoup:
         image_soup = soup
-        imgs = image_soup.select(self.selectors.NOELSHACK_IMG_SELECTOR.value)
+        imgs = image_soup.select(
+            self.risitas_info.selectors.NOELSHACK_IMG_SELECTOR.value
+        )
         remove_attrs = ["width", "height"]
         for remove_attr in remove_attrs:
             for img in imgs:
@@ -511,7 +514,7 @@ class Posts():
                         "This is a jvc smiley! %s",
                         missing_attribute
                     )
-        if self.domain == Jvc.SITE.value:
+        if self.risitas_info.domain == Jvc.SITE.value:
             for img in imgs:
                 if re.search("fichiers", img.attrs["alt"]):
                     img.attrs["src"] = img.attrs["alt"]
@@ -519,7 +522,7 @@ class Posts():
                     img.attrs["src"] = self.downloader.download_img_page(
                         img.attrs["alt"]
                     )
-        elif self.domain == Jvarchive.SITE.value:
+        elif self.risitas_info.domain == Jvarchive.SITE.value:
             for img in imgs:
                 img.attrs["src"] = img.attrs["alt"]
         return image_soup
@@ -556,16 +559,19 @@ class Posts():
     ) -> BeautifulSoup:
         new_html = []
         risitas_html = post.select_one(
-            self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE.value
+            self.
+            risitas_info.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE.value
         )
         if risitas_html and risitas_html.p:
             return risitas_html
         risitas_html = post.select(
-               self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE2.value
+            self.
+            risitas_info.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE2.value
         )
         if not risitas_html:
             risitas_html = post.select(
-                self.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE3.value
+                self.
+                risitas_info.selectors.RISITAS_TEXT_SELECTOR_ALTERNATIVE3.value
             )
         for paragraph in risitas_html:
             new_html.append(str(paragraph))
@@ -586,84 +592,103 @@ class Posts():
             pass
         return risitas_html
 
+    def _skip_post(
+            self,
+            append: bool,
+            message_cursor: int,
+            message_cursor_db: int,
+    ) -> bool:
+        skip_post = False
+        if append and not self.past_message:
+            if message_cursor <= message_cursor_db:
+                if message_cursor == 19:
+                    self.past_message = True
+                skip_post = True
+        return skip_post
+
+    def _contains_paragraph(self, risitas_html: 'bs4') -> Optional["bs4"]:
+        contains_paragraph = None
+        try:
+            contains_paragraph = risitas_html.select("p")
+        except AttributeError:
+            pass
+        return contains_paragraph
+
+    def _is_risitas_post(
+            self,
+            post,
+            risitas_html,
+            is_domain_webarchive
+    ) -> bool:
+        is_author = self._check_post_author(
+            post,
+            self.args.no_match_author,
+            is_domain_webarchive
+        )
+        if not is_author and not is_domain_webarchive:
+            return False
+        if self.args.all_messages:
+            self.count += 1
+            self.risitas_html.append((risitas_html, ))
+            return False
+        contains_identifiers = self._check_post_identifiers(
+               post,
+               self.args.identifiers
+        )
+        is_short = self._check_post_length(post)
+        contains_blockquote = self._contains_blockquote(risitas_html)
+        if contains_blockquote:
+            return False
+        contains_image = self._check_chapter_image(post)
+        if (
+                  not contains_identifiers and
+                  self.count > 1 and
+                  not contains_image
+                  and is_short
+        ):
+            return False
+        if is_short and not contains_image:
+            return False
+        is_duplicate = self._check_post_duplicates(
+               risitas_html,
+               contains_image
+        )
+        if is_duplicate:
+               first_lines = risitas_html.select_one('p').text[0:50].strip()
+               logging.error("The current post '%s' is a duplicate!", first_lines)
+               self.duplicates += 1
+               return False
+        return True
 
     def get_posts(
             self,
             soup: BeautifulSoup,
             risitas_authors: List,
-            identifiers: List,
-            no_match_author: bool,
             append: bool,
             message_cursor_db: int,
     ) -> None:
-        posts = soup.select(self.selectors.MESSAGE_SELECTOR.value)
-        # Counter necessary to keep the first post in risitas
-        # This post usually have no identifiers and is used
-        # as an intro
+        is_domain_webarchive = bool(
+            self.risitas_info.domain == "web.archive.org"
+        )
+        posts = soup.select(self.risitas_info.selectors.MESSAGE_SELECTOR.value)
         if not self.authors:
             self.authors = risitas_authors
         self.added_message = False
         for message_cursor, post in enumerate(posts):
-            # We go to the last page recorded in the db
-            # And we skip the messages according to the cursor
-            # position in the database
-            if append and not self.past_message:
-                if message_cursor <= message_cursor_db:
-                    if message_cursor == 19:
-                        self.past_message = True
-                    continue
-            is_author = self._check_post_author(post, no_match_author)
+            if self._skip_post(append, message_cursor, message_cursor_db):
+                continue
             risitas_html = post.select_one(
-                self.selectors.RISITAS_TEXT_SELECTOR.value
+                self.risitas_info.selectors.RISITAS_TEXT_SELECTOR.value
             )
-            try:
-                contains_paragraph = risitas_html.select("p")
-            except AttributeError:
-                contains_paragraph = None
-            if self.webarchive and not contains_paragraph:
+            contains_paragraph = self._contains_paragraph(risitas_html)
+            if is_domain_webarchive and not contains_paragraph:
                 risitas_html = self._get_webarchive_post_html(post)
-            if not is_author and not self.webarchive:
-                continue
-            contains_image = self._check_chapter_image(risitas_html)
-            if contains_image:
-                logging.debug("The current post contains images!")
-                if not self.no_resize_images:
-                    risitas_html = self._get_fullscale_image(risitas_html)
-            if self.all_messages:
-                self.count += 1
-                self.risitas_html.append((risitas_html, ))
-                continue
-            contains_identifiers = self._check_post_identifiers(
-                post,
-                identifiers
-            )
-            is_short = self._check_post_length(post)
-            contains_blockquote = self._contains_blockquote(risitas_html)
-            if contains_blockquote:
-                continue
-            if (
-                    not contains_identifiers and
-                    self.count > 1 and
-                    not contains_image
-                    and is_short
+            contains_image = self._check_chapter_image(post)
+            if not self._is_risitas_post(
+                    post,
+                    risitas_html,
+                    is_domain_webarchive
             ):
-                continue
-            if is_short and not contains_image:
-                continue
-            is_duplicate = self._check_post_duplicates(
-                risitas_html,
-                contains_image
-            )
-            if is_duplicate:
-                first_lines = risitas_html.select_one('p').text[0:50].strip()
-                logging.info(
-                    (
-                        "The current post "
-                        "%s"
-                        "is a duplicate!", first_lines
-                    )
-                )
-                self.duplicates += 1
                 continue
             self._print_chapter_added(risitas_html)
             self.added_message = True
@@ -679,7 +704,7 @@ class RisitasPostsDownload():
     def __init__(self, page_downloader, args):
         self.page_downloader = page_downloader
         self.args = args
-        self.page_number = 1
+        self.page_number = 0
         self.posts = None
         self.authors = []
         self.append = False
@@ -706,16 +731,14 @@ class RisitasPostsDownload():
         selectors = get_selectors_and_site(link)
         soup = self.page_downloader.download_topic_page(
             link,
-            self.page_number,
+            1,
         )
         risitas_info = RisitasInfo(soup, selectors, domain)
         self.authors = [risitas_info.author] + self.args.authors
         self.posts = Posts(
-            selectors,
+            risitas_info,
             self.page_downloader,
-            domain,
-            self.args.all_messages,
-            self.args.no_resize_images,
+            self.args,
         )
         return risitas_info
 
@@ -770,6 +793,8 @@ class RisitasPostsDownload():
     ):
         for page in range(total_pages):
             self._set_init_message_cursor(row)
+            if not self.page_number:
+                self.page_number = 1
             soup = self.page_downloader.download_topic_page(
                 link, self.page_number
             )
@@ -779,10 +804,8 @@ class RisitasPostsDownload():
             self.posts.get_posts(
                 soup,
                 self.authors,
-                self.args.identifiers,
-                self.args.no_match_author,
                 self.append,
-                self.message_cursor
+                self.message_cursor,
             )
             self.page_number += 1
             self._set_post_message_cursor(
@@ -795,7 +818,6 @@ class RisitasPostsDownload():
 def get_database_risitas_page(row: tuple, total_pages: int):
     if row[0]:
         risitas_database_pages = row[0][6]
-        #page_number = 0
         total_pages = (
             total_pages - risitas_database_pages + 1
         )
@@ -825,7 +847,7 @@ class RisitasHtmlFile():
         if append and not self.args.no_database:
             self.html_file_path = pathlib.Path(self.row[0][4])
             self.htmls_file_path.append(self.html_file_path)
-            self.append_html(self.html_file_path, self.risitas_html)
+            self.append_html()
         else:
             self.write_html()
             self.htmls_file_path.append(self.html_file_path)
@@ -895,14 +917,18 @@ class RisitasHtmlFile():
         for new_chapter in self.risitas_html:
             soup.body.insert(len(soup.body.contents), new_chapter[0])
             logging.debug("Appending %s ...", new_chapter[0])
-        with open(self.html_path_file, "w", encoding='utf-8') as html_file:
+        with open(self.html_file_path, "w", encoding='utf-8') as html_file:
             html_file.write(soup.decode().replace("’", "'"))
-        logging.info("The chapters have been appended to %s", html_path_file)
+        logging.info(
+            "The chapters have been appended to %s",
+            self.html_file_path
+        )
 
 
 def download_risitas(args) -> List['pathlib.Path']:
     """Download risitas"""
     page_links = parse_input_links(args.links)
+    risitas_html_file = None
     for link in page_links:
         domain = get_domain(link)
         page_downloader = PageDownloader(domain)
@@ -950,7 +976,8 @@ def download_risitas(args) -> List['pathlib.Path']:
                 posts_downloader.message_cursor,
                 posts_downloader.authors,
             )
-    return risitas_html_file.htmls_file_path
+    if risitas_html_file:
+        return risitas_html_file.htmls_file_path
 
 
 def main() -> None:
