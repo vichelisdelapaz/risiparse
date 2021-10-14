@@ -2,7 +2,7 @@
 
 """This module takes care of the html to pdf conversion using QWebEngine"""
 
-from typing import List, Iterator, Optional
+from typing import List, Iterator
 import logging
 import pathlib
 
