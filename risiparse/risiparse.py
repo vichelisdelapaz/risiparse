@@ -429,27 +429,29 @@ class Posts():
         imgs = image_soup.select(
             self.risitas_info.selectors.NOELSHACK_IMG_SELECTOR.value
         )
-        remove_attrs = ["width", "height"]
-        for remove_attr in remove_attrs:
-            for img in imgs:
-                try:
-                    img.attrs.pop(remove_attr)
-                    logging.info(
-                        "Displaying %s at full scale!", img.attrs["src"]
-                    )
-                except KeyError as missing_attribute:
-                    logging.exception(
-                        "This is a jvc smiley! %s",
-                        missing_attribute
-                    )
+        for img in imgs:
+            try:
+                img.attrs.pop("width")
+                img.attrs.pop("height")
+                logging.info(
+                    "Displaying %s at full scale!", img.attrs["src"]
+                )
+            except KeyError as missing_attribute:
+                logging.exception(
+                    "This is a jvc smiley! %s",
+                    missing_attribute
+                )
         if self.risitas_info.domain == Jvc.SITE.value:
             for img in imgs:
                 if re.search("fichiers", img.attrs["alt"]):
                     img.attrs["src"] = img.attrs["alt"]
                 else:
+                    original_src = img.attrs['src']
                     img.attrs["src"] = self.downloader.download_img_page(
                         img.attrs["alt"]
                     )
+                    if not img.attrs["src"]:
+                        img.attrs["src"] = original_src
         elif self.risitas_info.domain == Jvarchive.SITE.value:
             for img in imgs:
                 img.attrs["src"] = img.attrs["alt"]
@@ -586,11 +588,6 @@ class Posts():
             )
             if is_domain_webarchive and not contains_paragraph(risitas_html):
                 risitas_html = self._get_webarchive_post_html(post)
-            contains_image = self._check_post_is_image(post)
-            risitas_html = (
-                self._get_fullscale_image(post)
-                if contains_image else risitas_html
-            )
             if not self.is_risitas_post(
                     post,
                     risitas_html,
@@ -598,6 +595,10 @@ class Posts():
                     risitas_authors
             ):
                 continue
+            contains_image = self._check_post_is_image(risitas_html)
+            if contains_image:
+                if not self.args.no_resize_images:
+                    risitas_html = self._get_fullscale_image(risitas_html)
             print_chapter_added(risitas_html)
             self.risitas_html.append((risitas_html, contains_image))
             self.risitas_raw_text.append(risitas_html.text)
