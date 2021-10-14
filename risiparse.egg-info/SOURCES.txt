@@ -16,3 +16,5 @@ risiparse/utils/__init__.py
 risiparse/utils/database.py
 risiparse/utils/log.py
 risiparse/utils/utils.py
+risiparse/utils/utils_page_downloader.py
+risiparse/utils/utils_posts.py

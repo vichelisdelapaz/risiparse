@@ -1,7 +1,6 @@
 requests
 BeautifulSoup4
-PyQt5
-PyQtWebEngine
+PySide6
 lxml
 colorama
 waybackpy
