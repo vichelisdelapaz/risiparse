@@ -21,7 +21,7 @@ jobs:
       - name: Install libopenGL and Xvfb
         run: sudo apt-get update && sudo apt-get install -y freeglut3 freeglut3-dev xvfb
       - name: Install type-requests
-        run: python3 -m pip install types-requests && mypy --install-types
+        run: python3 -m pip install types-requests
       - name: Run tox
         # Run tox using the version of Python in `PATH`
         run: tox
