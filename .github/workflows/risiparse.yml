@@ -11,8 +11,7 @@ jobs:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
-    Ubuntu-latest:
-      runs-on: ${{ matrix.os }}
+    runs-on: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v2
