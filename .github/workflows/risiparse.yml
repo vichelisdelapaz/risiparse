@@ -3,60 +3,16 @@ name: Risiparse
 on: [push]
 
 jobs:
-  Ubuntu-latest:
-
-    runs-on: ubuntu-latest
+  main:
     strategy:
       matrix:
         python: [3.10.0]
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Install tox and any other packages
-        run: pip3 install tox mypy
-      - name: Install libopenGL and Xvfb
-        run: sudo apt-get update && sudo apt-get install -y freeglut3 freeglut3-dev xvfb
-      - name: Install type-requests
-        run: python3 -m pip install types-requests
-      - name: Run tox
-        # Run tox using the version of Python in `PATH`
-        run: tox
-
-jobs:
-  macOS-latest:
-
-    runs-on: macOS-latest
-    strategy:
-      matrix:
-        python: [3.10.0]
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Install tox and any other packages
-        run: pip3 install tox mypy
-      - name: Install libopenGL and Xvfb
-        run: sudo apt-get update && sudo apt-get install -y freeglut3 freeglut3-dev xvfb
-      - name: Install type-requests
-        run: python3 -m pip install types-requests
-      - name: Run tox
-        # Run tox using the version of Python in `PATH`
-        run: tox
-
-jobs:
-  Windows-latest:
-
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python: [3.10.0]
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+    Ubuntu-latest:
+      runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v2
