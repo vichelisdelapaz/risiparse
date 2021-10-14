@@ -301,6 +301,9 @@ class RisitasInfo():
 class Posts():
     """Get a post author and content"""
 
+    # Disabling too many instances for now.
+    # Refactoring later
+    # pylint: disable=too-many-instance-attributes
     def __init__(
             self,
             risitas_info: 'RisitasInfo',
@@ -870,6 +873,6 @@ def main() -> None:
     if not args.no_download:
         htmls_file_path = download_risitas(args)
     if args.create_pdfs:
-        htmls_file_path = htmls_file_path + [args.create_pdfs]
+        htmls_file_path = htmls_file_path + args.create_pdfs
     if not args.no_pdf:
         create_pdfs(args.output_dir, htmls_file_path)

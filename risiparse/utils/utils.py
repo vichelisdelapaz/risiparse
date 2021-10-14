@@ -99,7 +99,7 @@ def split_big_html(
         divs_step: int = 30
 ) -> Dict[str, List[pathlib.Path]]:
     """Split an html file into smaller htmls"""
-    (pathlib.Path(f"{html_part_tmpdir}") / "risitas-pdf").mkdir()
+    (pathlib.Path(f"{html_part_tmpdir}") / "risitas-pdf").mkdir(exist_ok=True)
     data = BeautifulSoup(
         html.read_text(encoding='utf-8'), features="lxml"
     )
@@ -170,6 +170,7 @@ def create_pdfs(
                     splitted_pdfs
                 )
                 htmls_file_path.remove(html)
+        logging.debug("Splitted pdfs is %s", splitted_pdfs)
         merge_pdfs(splitted_pdfs, html_part_tmpdir)
     if htmls_file_path:
         app = html_to_pdf.QtWidgets.QApplication([])
@@ -235,8 +236,7 @@ def get_args() -> argparse.Namespace:
     # Pdfs to create
     parser.add_argument(
         "--create-pdfs",
-        nargs='?',
-        default=[],
+        nargs='+',
         help=(
             "A list of html files path to create pdfs from "
             "If this option is not specified with --no-download "
