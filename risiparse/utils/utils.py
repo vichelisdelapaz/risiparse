@@ -128,11 +128,11 @@ def split_big_html(
 
 def merge_pdfs(
         splitted_pdfs: Dict[str, List[pathlib.Path]],
-        html_part_tmpdir: str
+        html_part_tmpdir: str,
+        app
 ) -> None:
     """Create pdfs from smaller htmls and merge them back"""
     if splitted_pdfs:
-        app = html_to_pdf.QtWidgets.QApplication([])
         for pdf_file_name, htmls_part in splitted_pdfs.items():
             merger = PdfFileMerger()
             output_dir = pathlib.Path(f"{html_part_tmpdir}")
@@ -152,6 +152,7 @@ def create_pdfs(
         htmls_file_path: List['pathlib.Path'],
 ) -> None:
     """Create pdfs from a list of htmls"""
+    app = html_to_pdf.QtWidgets.QApplication([])
     splitted_pdfs: Dict[str, List[pathlib.Path]] = {}
     html_folder_path = output_dir / "risitas-html"
     if not htmls_file_path:
@@ -171,11 +172,9 @@ def create_pdfs(
                 )
                 htmls_file_path.remove(html)
         logging.debug("Splitted pdfs is %s", splitted_pdfs)
-        merge_pdfs(splitted_pdfs, html_part_tmpdir)
+        merge_pdfs(splitted_pdfs, html_part_tmpdir, app)
     if htmls_file_path:
-        app = html_to_pdf.QtWidgets.QApplication([])
         page = html_to_pdf.PdfPage(output_dir)
-        logging.info("Creating pdfs...")
         page.convert(htmls_file_path)
         app.exec()
 
