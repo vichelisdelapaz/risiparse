@@ -3,9 +3,9 @@ name: Risiparse
 on: [push]
 
 jobs:
-  build:
+  CI:
 
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macOS-latest, windows-latest]
     strategy:
       matrix:
         python: [3.10.0]
