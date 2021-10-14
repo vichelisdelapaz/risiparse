@@ -25,7 +25,7 @@ def test_authors(monkeypatch, tmp_path, caplog, test_link):
     monkeypatch.setattr(sys, 'argv', testargs)
     main()
     last_message = caplog.records[-1].getMessage()
-    assert "Creating" in last_message
+    assert "Created" in last_message
     output_file = last_message.split()[1]
     output_file_path = pathlib.Path(output_file)
     assert output_file_path.exists()
