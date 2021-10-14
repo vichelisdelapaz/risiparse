@@ -59,7 +59,6 @@ class PdfPage(QWebEnginePage):
     def _handle_load_finished(self) -> None:
         pdf_file = self.current_file.with_suffix(".pdf").name
         output_file: pathlib.Path = self.pdf_folder_path / pdf_file
-        self.pdf_files.append(output_file)
         self.printToPdf(str(output_file), layout=self.layout)
         logging.info("Creating %s", output_file)
 
