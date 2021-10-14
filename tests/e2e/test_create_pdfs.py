@@ -7,6 +7,7 @@ import pytest
 
 SCRIPT = pathlib.Path(__file__).parent / "risiparse" / "risiparse.py"
 
+@pytest.mark.no_xvfb
 @pytest.mark.parametrize(
     "test_link",
     [
