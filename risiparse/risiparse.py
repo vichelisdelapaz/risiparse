@@ -312,7 +312,6 @@ class Posts():
         self.downloader = downloader
         self.risitas_info = risitas_info
         self.args = args
-        self.authors: List[str] = []
         self.past_message = False
         self.post_cursor = 0
         self.count = 0
@@ -322,7 +321,8 @@ class Posts():
             self,
             post: BeautifulSoup,
             no_match_author: bool,
-            is_web_archive: bool
+            is_web_archive: bool,
+            authors: List[str]
     ) -> bool:
         # This is needed cuz deleted accounts are not handled
         # the same way for whatever reason...
@@ -342,14 +342,14 @@ class Posts():
             "The current author is "
             "%s "
             "and the risitas author is "
-            "%s", post_author, self.authors
+            "%s", post_author, authors
         )
         if not no_match_author:
-            for author in self.authors:
+            for author in authors:
                 author_root = re.sub(r"\d*", "", author)
                 if author_root in post_author:
                     return True
-        return bool(post_author in self.authors)
+        return bool(post_author in authors)
 
     def _check_post_duplicates(
             self,
@@ -490,6 +490,7 @@ class Posts():
             post_cursor: int,
             post_cursor_db: int,
     ) -> bool:
+        """Go to the nth post if message_cursor in the database"""
         skip_post = False
         if append and not self.past_message:
             if post_cursor <= post_cursor_db:
@@ -502,7 +503,8 @@ class Posts():
             self,
             post,
             risitas_html,
-            is_domain_webarchive
+            is_domain_webarchive: bool,
+            authors: List[str]
     ) -> bool:
         """Check if the given post is a risitas"""
         is_part_of_risitas = False
@@ -510,7 +512,8 @@ class Posts():
             is_author = self._check_post_author(
                 post,
                 self.args.no_match_author,
-                is_domain_webarchive
+                is_domain_webarchive,
+                authors
             )
             if not is_author and not is_domain_webarchive:
                 break
@@ -565,9 +568,6 @@ class Posts():
             self.risitas_info.domain == "web.archive.org"
         )
         posts = soup.select(self.risitas_info.selectors.MESSAGE_SELECTOR.value)
-        if not self.authors:
-            self.authors = risitas_authors
-        self.added_message = False
         for post_cursor, post in enumerate(posts):
             if self._skip_post(append, post_cursor, post_cursor_db):
                 continue
@@ -580,11 +580,11 @@ class Posts():
             if not self.is_risitas_post(
                     post,
                     risitas_html,
-                    is_domain_webarchive
+                    is_domain_webarchive,
+                    risitas_authors
             ):
                 continue
             print_chapter_added(risitas_html)
-            self.added_message = True
             self.risitas_html.append((risitas_html, contains_image))
             self.risitas_raw_text.append(risitas_html.text)
             self.count += 1
@@ -635,7 +635,10 @@ class RisitasPostsDownload():
         self,
         row
     ) -> None:
-        """Set the post cursor for the first time"""
+        """
+        Set the post cursor for the first time,
+        from the database if it exists else it is set to 0
+        """
         if not self.args.no_database:
             if row:
                 if not self.page_number:
@@ -650,10 +653,14 @@ class RisitasPostsDownload():
         page: int,
         total_pages: int,
     ) -> None:
+        """
+        Set the post cursor that is going to be in the database,
+        if no then the post cursor is going to be 0
+        """
+        at_end_of_risitas = bool(page + 1 == total_pages)
         if (
                 self.posts.post_cursor and
-                page + 1 == total_pages and
-                self.posts.added_message
+                at_end_of_risitas
         ):
             self.post_cursor = self.posts.post_cursor
 
