@@ -26,4 +26,4 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y freeglut3 freeglut3-dev xvfb
       - name: Run tox
         # Run tox using the version of Python in `PATH`
-        run: tox
+        run: xvfb-run tox
