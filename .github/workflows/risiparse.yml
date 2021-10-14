@@ -27,4 +27,4 @@ jobs:
         run: python3 -m pip install types-requests && echo $QT_DEBUG_PLUGINS
       - name: Run tox
         # Run tox using the version of Python in `PATH`
-        run: tox
+        run: tox -e mypy
