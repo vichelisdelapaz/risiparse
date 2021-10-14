@@ -31,7 +31,7 @@ class PdfPage(QWebEnginePage):
         self.layout = QPageLayout()
         self.layout.setPageSize(QPageSize(QPageSize.A4))
         self.layout.setOrientation(QPageLayout.Portrait)
-        # Need to open issue on pylint
+        # Need to open issue on pylint tracker
         self.loadFinished.connect(  # pylint: disable=no-member
             self._handle_load_finished
         )

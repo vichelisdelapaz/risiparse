@@ -65,6 +65,10 @@ class TimeoutHTTPAdapter(HTTPAdapter):
             del kwargs["timeout"]
         super().__init__(*args, **kwargs)
 
+    # The send method expects 7 parameters, here they are just in kwargs
+    # pylint will throw an error if there are too many parameters.
+    # So we just disable it here.
+    # pylint: disable=arguments-differ
     def send(self, request, **kwargs):
         """Replace the default timeout with our own"""
         timeout = kwargs.get("timeout")
