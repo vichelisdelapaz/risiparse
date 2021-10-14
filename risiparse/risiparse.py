@@ -131,13 +131,17 @@ class PageDownloader():
         soup = BeautifulSoup(page.content, features="lxml")
         return soup
 
-    def download_img_page(self, page_link: str) -> str:
+    def download_img_page(self, page_link: str) -> Optional[str]:
         """Get the full scale image link"""
         page = self.http.get(page_link)
         soup = BeautifulSoup(page.content, features="lxml")
-        img_link = soup.select_one(
-            Noelshack.IMG_SELECTOR.value
-        ).attrs["src"]
+        img_link = None
+        try:
+            img_link = soup.select_one(
+                Noelshack.IMG_SELECTOR.value
+            ).attrs["src"]
+        except AttributeError as image_404:
+            logging.exception(image_404)
         return img_link
 
     def get_webarchive_img(
@@ -200,6 +204,9 @@ class PageDownloader():
                     # Connection refused or others errors.
                     except requests.exceptions.ConnectionError as con_error:
                         logging.exception(con_error)
+                        continue
+                    except requests.exceptions.InvalidSchema as invalid_schema:
+                        logging.exception(invalid_schema)
                         continue
                     if status_code == 404:
                         image = self.get_webarchive_img(link)
@@ -580,6 +587,10 @@ class Posts():
             if is_domain_webarchive and not contains_paragraph(risitas_html):
                 risitas_html = self._get_webarchive_post_html(post)
             contains_image = self._check_post_is_image(post)
+            risitas_html = (
+                self._get_fullscale_image(post)
+                if contains_image else risitas_html
+            )
             if not self.is_risitas_post(
                     post,
                     risitas_html,
