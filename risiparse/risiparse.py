@@ -868,7 +868,7 @@ def download_risitas(args) -> List['pathlib.Path'] | List:
             row
         )
         risitas_html_file.append_to_or_write_html_file(
-            posts_downloader.append,
+            posts_downloader.append_to_html,
         )
         if not args.no_database:
             update_db(
