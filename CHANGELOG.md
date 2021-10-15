@@ -1,6 +1,9 @@
 # 2.0.1
 
--  Renamed ```all-messages``` to ```all-posts``` to be consistent
+- Renamed ```all-messages``` to ```all-posts``` to be consistent
+
+- Fixed a bug where the post_cursor would never get updated (be set to 0 to be more precise)
+  if the page didn't contains a post that is part of the risitas
 
 # 2.0.0
 
