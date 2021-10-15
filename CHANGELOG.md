@@ -1,3 +1,7 @@
+# 2.0.2
+
+- Changed append to append\_to\_html
+
 # 2.0.1
 
 - Renamed ```all-messages``` to ```all-posts``` to be consistent
