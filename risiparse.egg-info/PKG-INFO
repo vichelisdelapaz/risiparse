@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: risiparse
-Version: 2.0.0
+Version: 2.0.1
 Summary: A script to download risitas
 Home-page: https://github.com/vichelisdelapaz/risiparse
 Author: Vichelis
@@ -60,7 +60,7 @@ Voir https://github.com/vichelisdelapaz/risicompare
 
 ```
 kenny $ risiparse -h
-usage: risiparse [-h] [--all-messages] [--no-pdf] [--debug] [--no-download]
+usage: risiparse [-h] [--all-posts] [--no-pdf] [--debug] [--no-download]
                  [-l LINKS [LINKS ...]] [--create-pdfs CREATE_PDFS [CREATE_PDFS ...]]
                  [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
                  [--no-resize-images] [--download-images] [--no-match-author]
@@ -68,7 +68,7 @@ usage: risiparse [-h] [--all-messages] [--no-pdf] [--debug] [--no-download]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --all-messages        Download all the messages from the author.Default : False
+  --all-posts        Download all the posts from the author.Default : False
   --no-pdf              Default : False, only download html
   --debug               Verbose output, Default : False
   --no-download         Default : False, Create pdfs directly from current dir or one
@@ -156,7 +156,7 @@ Ne pas oublier de mettre l'option `--debug` si rien n'a l'air de se passer pour 
 Enfin download-images s'assure que les images soit téléchargés, ce qui est utile pour risicompare et aussi
 pour télécharger les sticker sur webarchive lorsque ceux-ci ont été 404ed.
 
-Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les messages dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
+Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les posts dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
 
 ## Bugs connus
 
@@ -179,11 +179,11 @@ Télécharger les risitas à partir de répertoire courant/risitas-links, dans r
 risiparse
 ```
 
-Télécharger tous les messages de l'auteur, utile si l'approche automatique en a manqué certains
+Télécharger tous les posts de l'auteur, utile si l'approche automatique en a manqué certains
 voir risicompare.
 
 ```
-risiparse --all-messages
+risiparse --all-posts
 ```
 
 Ne pas télécharger les risitas, créer des pdfs depuis des fichiers htmls donnés en input, avec -o
@@ -211,7 +211,7 @@ Télécharger les risitas sans agrandir les images qui pourraient être des chap
 risiparse  --no-resize-images
 ```
 
-Télécharger les messages contenant les mots clés suivants,
+Télécharger les posts contenant les mots clés suivants,
 peut aussi inclure un regexp. Voir les regexp de python
 
 ```
