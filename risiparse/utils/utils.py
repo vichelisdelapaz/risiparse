@@ -196,7 +196,7 @@ def get_args() -> argparse.Namespace:
         action="store_true",
         default=False,
         help=(
-            "Download all the posts from the author."
+            "Download all the posts from the author, "
             "Default : False"
         )
     )
@@ -204,21 +204,25 @@ def get_args() -> argparse.Namespace:
         "--no-pdf",
         action="store_true",
         default=False,
-        help="Default : False, only download html"
+        help="Only download html, Default : False"
     )
     parser.add_argument(
         "--debug",
         action="store_true",
         default=False,
-        help="Verbose output, Default : False"
+        help=(
+            "Verbose output for the stdout, the debug file always has "
+            "verbose output on, Default : False"
+        )
     )
     parser.add_argument(
         "--no-download",
         action="store_true",
         default=False,
         help=(
-            "Default : False, Create pdfs directly from current dir "
-            "or one specified by -o"
+            "Create pdfs directly from "
+            "current dir/risitas-html "
+            "or one specified by -o, Default : False"
         )
     )
     # Links
@@ -249,10 +253,10 @@ def get_args() -> argparse.Namespace:
         '--identifiers',
         nargs='+',
         help=(
-            "Give a list of words that are going to be matched by the script, "
+            "A list of words that are going to be matched by the script, "
             "example: a message that has the keyword 'hors-sujet', "
             "by adding 'hors-sujet' with this option, "
-            "the script will match the message that has this keyword. "
+            "the script will match the message that has this keyword, "
             "Default : 'chapitre'"
         ),
         required=False,
@@ -266,8 +270,7 @@ def get_args() -> argparse.Namespace:
         help=(
             "List of authors to be matched, by default the author of "
             "the first post author is considered as the author "
-            "throughout the whole risitas, "
-            "Default : Empty"
+            "throughout the whole risitas"
         ),
         required=False,
         default=[],
@@ -279,7 +282,7 @@ def get_args() -> argparse.Namespace:
         help=(
             "When the script 'thinks' that the post contains images "
             "and that they are chapters posted in screenshot, "
-            "it will try to display them to their full width, "
+            "it will try to display them to their full scale, "
             "Default : False"
         ),
         action="store_true",
@@ -292,7 +295,7 @@ def get_args() -> argparse.Namespace:
             "Whether to download images locally "
             "If set, this will change all img[src] link to point "
             "to the local images "
-            "Also this will try to download risitas sticker on webarchive "
+            "Also this will try to download risitas stickers on webarchive "
             "if they have been 404ed, "
             "Default : False"
         ),

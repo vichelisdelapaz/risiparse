@@ -49,7 +49,7 @@ usage: risiparse [-h] [--all-posts] [--no-pdf] [--debug] [--no-download]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --all-posts        Download all the posts from the author.Default : False
+  --all-posts           Download all the posts from the author.Default : False
   --no-pdf              Default : False, only download html
   --debug               Verbose output, Default : False
   --no-download         Default : False, Create pdfs directly from current dir or one
@@ -134,14 +134,14 @@ risiparse -l risitas-links -o ~/tmp
 
 Ne pas oublier de mettre l'option `--debug` si rien n'a l'air de se passer pour avoir les détails.
 
-Enfin download-images s'assure que les images soit téléchargés, ce qui est utile pour risicompare et aussi
+Enfin download-images s'assure que les images soit téléchargées, ce qui est utile pour risicompare et aussi
 pour télécharger les sticker sur webarchive lorsque ceux-ci ont été 404ed.
 
 Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les posts dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
 
 ## Bugs connus
 
-*Ca à l'air d'être règlé après avoir passé sur le webengine de pyside6 sortie fin septembre*
+*Ca à l'air d'être règlé après être passé sur le webengine de pyside6 sorti fin septembre*
 
 Lors de la création de pdfs, le script peut se bloquer indéfiniment et le seul moyen de reprendre le contrôle
 est de le tuer via le gestionnaire de tâches (penser à quitter le terminal si SIGKILL ne marche pas)
