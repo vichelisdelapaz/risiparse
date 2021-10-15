@@ -1,3 +1,7 @@
+# 2.0.1
+
+-  Renamed ```all-messages``` to ```all-posts``` to be consistent
+
 # 2.0.0
 
 - Most changes in this version are internal , i.e adding more test, refactor, proper CI...
@@ -6,7 +10,6 @@
   it follows the same logic for windows and macos (Appdata, Library...)
 
 - Dropped PyQtWebengine in favour of PySide
-
 
 # 1.4.0
 
@@ -17,7 +20,6 @@
 
 - Added ```--create-pdfs``` which allows to create pdfs from a list of html files given on the command
   line, just use ```--no-download``` to create pdfs of all html files in cur_dir/risitas-html.
-
 
 # 1.2.0
 

@@ -8,8 +8,8 @@ This is a project to get an offline copy of your favorite risitas.
 
 I define a risitas as a story told by a user on jeuxvideo.com and that uses images from risibank.fr.
 
-In practice this means the messages of the author (preferably marked by some kind of identifier) that tells the story.
-Which implies that all the messages from the other users(assuming the author post using one account)
+In practice this means the posts of the author (preferably marked by some kind of identifier) that tells the story.
+Which implies that all the posts from the other users(assuming the author post using one account)
 or that are offtopic are filtered out.
 
 ** Why is this useful?
@@ -36,15 +36,15 @@ or that are offtopic are filtered out.
    if not go to jvarchive and compare if the version there have new stuff
    if yes show the user the differences and if the user accepts them take the version from jv archive.
 1. Parse the author-name (first message)
-2. Get all messages of the author containing a list of identifiers (i.e (CHAPTER N|Part N|1.1|Some other text))
-3. Check if the messages are already stored and if they are different (use some hash)
+2. Get all posts of the author containing a list of identifiers (i.e (CHAPTER N|Part N|1.1|Some other text))
+3. Check if the posts are already stored and if they are different (use some hash)
    If yes show the differences and then proceed according to user input
 4. Produce the pdf
 
 Assumptions:
 
-- The author use a single account to post messages (i.e the one used to post the first message of the topic)
-- The messages of the author are not 410ed.
+- The author use a single account to post posts (i.e the one used to post the first message of the topic)
+- The posts of the author are not 410ed.
 - They follow an order :
   i.e after the n chapter you're supposed to get
   the n + 1 chapter (does not work very well in practice, see 410 and author that post images as a result without any identifier)
@@ -58,9 +58,9 @@ But if everything works the time spent on creating a pdf is 0.
 *** Bulk approach
 
 1. Parse the author-name (first message)
-2. Get all the messages of the authors
-3. Show the messages gathered and prompt to filter out the messages not part of the risitas
-4. Check if the messages are already stored and if they are different (use some hash)
+2. Get all the posts of the authors
+3. Show the posts gathered and prompt to filter out the posts not part of the risitas
+4. Check if the posts are already stored and if they are different (use some hash)
    If yes show the differences and then proceed according to user input
 5. Produce the pdf
 
@@ -70,12 +70,12 @@ in that case to continue the work later.
 
 However this is robust as we're not missing anything from the author (assuming he has not been banned and he is not using another account)
 
-Also can use Selenium instead of an html parser to just take screenshots of the messages which is faster and then pdfunite the images.
+Also can use Selenium instead of an html parser to just take screenshots of the posts which is faster and then pdfunite the images.
 
 *** Mix Bulk and Identifier approach
 
 1. Do the bulk (without the prompt part) and the identifier approach but don't produce a pdf yet.
-   Instead output the messages gathered by these approaches
+   Instead output the posts gathered by these approaches
    in a gui side by side (bulk on the left, identifier on the right) and look if there are parts missing in the
    identifier approach and if they are in the correct order.
 
@@ -92,7 +92,7 @@ replacing when the identifier is wrong, still better than the bulk approach.
 
 Possible to use an other algorithm than a deep net but I'm only comfortable with them for now.
 
-Use a deep net to classify messages
+Use a deep net to classify posts
 
 - To get a training set, need to get all the risitas (see jvflux), or parse forums
   that do similars stuff, or generate from scratch. Or use a pre-existing model

@@ -13,7 +13,7 @@ SCRIPT = pathlib.Path(__file__).parent / "risiparse" / "risiparse.py"
         ("https://www.jeuxvideo.com/forums/42-51-67616891-1-0-1-0-risitas-comment-j-ai-couche-avec-une-milf-ce-dimanche.htm")
     ],
 )
-def test_all_messages(monkeypatch, tmp_path, caplog, test_link):
+def test_all_posts(monkeypatch, tmp_path, caplog, test_link):
     tmpdir = tmp_path
     tmpdir.mkdir(exist_ok=True)
     testargs = [
@@ -21,7 +21,7 @@ def test_all_messages(monkeypatch, tmp_path, caplog, test_link):
         "-o", f"{tmpdir}",
         "-l" , test_link,
         "--no-pdf",
-        "--all-messages",
+        "--all-posts",
         "--no-database",
     ]
     monkeypatch.setattr(sys, 'argv', testargs)

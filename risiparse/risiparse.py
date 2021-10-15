@@ -326,7 +326,7 @@ class Posts():
         self.downloader = downloader
         self.risitas_info = risitas_info
         self.args = args
-        self.past_post = False
+        self.past_post_cursor_page = False
         self.added_post = False
         self.post_cursor = 0
         self.count = 0
@@ -503,17 +503,19 @@ class Posts():
 
     def _skip_post(
             self,
-            append: bool,
+            append_to_html: bool,
             post_cursor: int,
             post_cursor_db: int,
     ) -> bool:
         """Go to the nth post if post_cursor in the database"""
         skip_post = False
-        if append and not self.past_post:
+        if append_to_html and not self.past_post_cursor_page:
             if post_cursor <= post_cursor_db:
                 if post_cursor == 19:
-                    self.past_post = True
+                    self.past_post_cursor_page = True
                 skip_post = True
+            else:
+                self.past_post_cursor_page = True
         return skip_post
 
     def is_risitas_post(
@@ -575,7 +577,7 @@ class Posts():
             self,
             soup: BeautifulSoup,
             risitas_authors: List,
-            append: bool,
+            append_to_html: bool,
             post_cursor_db: int,
     ) -> None:
         """
@@ -587,7 +589,7 @@ class Posts():
         posts = soup.select(self.risitas_info.selectors.POST_SELECTOR.value)
         self.added_post = False
         for post_cursor, post in enumerate(posts):
-            if self._skip_post(append, post_cursor, post_cursor_db):
+            if self._skip_post(append_to_html, post_cursor, post_cursor_db):
                 continue
             risitas_html = post.select_one(
                 self.risitas_info.selectors.RISITAS_TEXT_SELECTOR.value
@@ -622,7 +624,7 @@ class RisitasPostsDownload():
         self.page_number = 0
         self.posts = None
         self.authors = []
-        self.append = False
+        self.append_to_html = False
         self.post_cursor = 0
 
     def disable_database_webarchive(self, domain) -> None:
@@ -665,7 +667,7 @@ class RisitasPostsDownload():
             if row:
                 if not self.page_number:
                     self.page_number = row[4]
-                self.append = True
+                self.append_to_html = True
                 self.post_cursor = row[5]
             else:
                 self.post_cursor = 0
@@ -682,7 +684,8 @@ class RisitasPostsDownload():
         at_end_of_risitas = bool(page + 1 == total_pages)
         if (
                 self.posts.post_cursor and
-                at_end_of_risitas and self.posts.added_post
+                at_end_of_risitas and
+                self.posts.added_post
         ):
             self.post_cursor = self.posts.post_cursor
         else:
@@ -724,7 +727,7 @@ class RisitasPostsDownload():
             self.posts.get_posts(
                 soup,
                 self.authors,
-                self.append,
+                self.append_to_html,
                 self.post_cursor,
             )
             self.page_number += 1
@@ -765,13 +768,13 @@ class RisitasHtmlFile():
 
     def append_to_or_write_html_file(
             self,
-            append: bool,
+            append_to_html: bool,
     ) -> None:
         """
         Create or append an html file, side effect is to
         collect html_file_path in order to convert them to pdf
         """
-        if append and not self.args.no_database:
+        if append_to_html and not self.args.no_database:
             self.html_file_path = pathlib.Path(self.row[3])
             self.htmls_file_path.append(self.html_file_path)
             self.append_html()
