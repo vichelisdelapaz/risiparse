@@ -14,7 +14,7 @@ class Jvc(Enum):
     TOTAL_SELECTOR_ALTERNATIVE = (
         ".bloc-liste-num-page > span:nth-last-of-type(2)"
     )
-    MESSAGE_SELECTOR = ".conteneur-message"
+    POST_SELECTOR = ".conteneur-message"
     RISITAS_TEXT_SELECTOR = "[class='txt-msg text-enrichi-forum']"
     TITLE_SELECTOR = "#bloc-title-forum"
     NOELSHACK_IMG_SELECTOR = "img.img-shack"
@@ -29,7 +29,7 @@ class Jvarchive(Enum):
     )
     DELETED_AUTHOR_SELECTOR = "[class='h4 text-truncate min-width-0 mb-0']"
     TOTAL_SELECTOR = ".page-item:nth-last-child(2)"
-    MESSAGE_SELECTOR = "[class='card-body pb-0 px-3 px-md-4 pt-3']"
+    POST_SELECTOR = "[class='card-body pb-0 px-3 px-md-4 pt-3']"
     RISITAS_TEXT_SELECTOR = ".conteneur-message"
     TITLE_SELECTOR = "[class='h2 text-white d-inline align-middle mb-0 mr-2']"
     NOELSHACK_IMG_SELECTOR = "img"
@@ -41,7 +41,7 @@ class Webarchive(Enum):
     SITE = "web.archive.org"
     AUTHOR_SELECTOR = "h2 + p > a"
     TOTAL_SELECTOR = ".page-links > a:last-child"
-    MESSAGE_SELECTOR = ".entry-content"
+    POST_SELECTOR = ".entry-content"
     RISITAS_TEXT_SELECTOR = ".entry-content > div.txt-msg.text-enrichi-forum"
     RISITAS_TEXT_SELECTOR_ALTERNATIVE = ".entry-content > div"
     RISITAS_TEXT_SELECTOR_ALTERNATIVE2 = (

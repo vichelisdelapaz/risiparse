@@ -244,7 +244,7 @@ class RisitasInfo():
             if author == "Pseudo supprimé":
                 logging.error(
                     "The author has deleted his account, "
-                    "need to sort the message after this "
+                    "need to sort the post after this "
                     "and look if he posted with an "
                     "other account"
                 )
@@ -326,7 +326,8 @@ class Posts():
         self.downloader = downloader
         self.risitas_info = risitas_info
         self.args = args
-        self.past_message = False
+        self.past_post = False
+        self.added_post = False
         self.post_cursor = 0
         self.count = 0
         self.duplicates = 0
@@ -506,12 +507,12 @@ class Posts():
             post_cursor: int,
             post_cursor_db: int,
     ) -> bool:
-        """Go to the nth post if message_cursor in the database"""
+        """Go to the nth post if post_cursor in the database"""
         skip_post = False
-        if append and not self.past_message:
+        if append and not self.past_post:
             if post_cursor <= post_cursor_db:
                 if post_cursor == 19:
-                    self.past_message = True
+                    self.past_post = True
                 skip_post = True
         return skip_post
 
@@ -533,7 +534,7 @@ class Posts():
             )
             if not is_author and not is_domain_webarchive:
                 break
-            if self.args.all_messages:
+            if self.args.all_posts:
                 self.count += 1
                 self.risitas_html.append((risitas_html, ))
                 break
@@ -583,7 +584,8 @@ class Posts():
         is_domain_webarchive = bool(
             self.risitas_info.domain == "web.archive.org"
         )
-        posts = soup.select(self.risitas_info.selectors.MESSAGE_SELECTOR.value)
+        posts = soup.select(self.risitas_info.selectors.POST_SELECTOR.value)
+        self.added_post = False
         for post_cursor, post in enumerate(posts):
             if self._skip_post(append, post_cursor, post_cursor_db):
                 continue
@@ -604,6 +606,7 @@ class Posts():
                 if not self.args.no_resize_images:
                     risitas_html = self._get_fullscale_image(risitas_html)
             print_chapter_added(risitas_html)
+            self.added_post = True
             self.risitas_html.append((risitas_html, contains_image))
             self.risitas_raw_text.append(risitas_html.text)
             self.count += 1
@@ -679,9 +682,11 @@ class RisitasPostsDownload():
         at_end_of_risitas = bool(page + 1 == total_pages)
         if (
                 self.posts.post_cursor and
-                at_end_of_risitas
+                at_end_of_risitas and self.posts.added_post
         ):
             self.post_cursor = self.posts.post_cursor
+        else:
+            self.post_cursor = 0
 
     def log_posts_downloaded_and_duplicates(
             self,
@@ -692,7 +697,7 @@ class RisitasPostsDownload():
             "%s "
             "is : %d", self.posts.risitas_info.title, self.posts.count
         )
-        if not self.posts.args.all_messages:
+        if not self.posts.args.all_posts:
             logging.info(
                 "The number of duplicates for "
                 "%s "

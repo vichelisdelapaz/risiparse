@@ -192,11 +192,11 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     default_links = [pathlib.Path().cwd() / "risitas-links"]
     parser.add_argument(
-        "--all-messages",
+        "--all-posts",
         action="store_true",
         default=False,
         help=(
-            "Download all the messages from the author."
+            "Download all the posts from the author."
             "Default : False"
         )
     )

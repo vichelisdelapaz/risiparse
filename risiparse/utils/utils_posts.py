@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup, Tag
 
 def check_post_length(post: BeautifulSoup) -> bool:
     """Check the post length to see if this is a chapter
-    or an offtopic message"""
+    or an offtopic post"""
     paragraph = post.text.strip().replace("\n", "")
     return bool(len(paragraph) < 1000)
 
