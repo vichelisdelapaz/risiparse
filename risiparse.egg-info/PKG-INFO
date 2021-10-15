@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: risiparse
-Version: 2.0.2
+Version: 2.0.3
 Summary: A script to download risitas
 Home-page: https://github.com/vichelisdelapaz/risiparse
 Author: Vichelis
@@ -60,41 +60,41 @@ Voir https://github.com/vichelisdelapaz/risicompare
 
 ```
 kenny $ risiparse -h
-usage: risiparse [-h] [--all-posts] [--no-pdf] [--debug] [--no-download]
-                 [-l LINKS [LINKS ...]] [--create-pdfs CREATE_PDFS [CREATE_PDFS ...]]
-                 [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
-                 [--no-resize-images] [--download-images] [--no-match-author]
-                 [--clear-database] [--no-database] [-o OUTPUT_DIR]
+usage: risiparse.py [-h] [--all-posts] [--no-pdf] [--debug] [--no-download]
+                    [-l LINKS [LINKS ...]] [--create-pdfs CREATE_PDFS [CREATE_PDFS ...]]
+                    [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
+                    [--no-resize-images] [--download-images] [--no-match-author]
+                    [--clear-database] [--no-database] [-o OUTPUT_DIR]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --all-posts        Download all the posts from the author.Default : False
-  --no-pdf              Default : False, only download html
-  --debug               Verbose output, Default : False
-  --no-download         Default : False, Create pdfs directly from current dir or one
-                        specified by -o
+  --all-posts           Download all the posts from the author, Default : False
+  --no-pdf              Only download html, Default : False
+  --debug               Verbose output for the stdout, the debug file always has verbose
+                        output on, Default : False
+  --no-download         Create pdfs directly from current dir/risitas-html or one specified
+                        by -o, Default : False
   -l LINKS [LINKS ...], --links LINKS [LINKS ...]
                         The links file, or links from standard input, Default : current
                         dir/risitas-links
   --create-pdfs CREATE_PDFS [CREATE_PDFS ...]
-                        A list of html file path to create pdfs from. If this option is not
+                        A list of html files path to create pdfs from If this option is not
                         specified with --no-download the pdfs will be created for all html
                         files in risitas-html
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script,
-                        example: a message that has the keyword 'hors-sujet', by adding
-                        'hors-sujet' with this option, the script will match the message that
-                        has this keyword. Default : 'chapitre'
+                        A list of words that are going to be matched by the script, example:
+                        a message that has the keyword 'hors-sujet', by adding 'hors-sujet'
+                        with this option, the script will match the message that has this
+                        keyword, Default : 'chapitre'
   --authors AUTHORS [AUTHORS ...]
                         List of authors to be matched, by default the author of the first
-                        post author is considered as the author throughout the whole risitas,
-                        Default : Empty
+                        post author is considered as the author throughout the whole risitas
   --no-resize-images    When the script 'thinks' that the post contains images and that they
                         are chapters posted in screenshot, it will try to display them to
-                        their full width, Default : False
+                        their full scale, Default : False
   --download-images     Whether to download images locally If set, this will change all
                         img[src] link to point to the local images Also this will try to
-                        download risitas sticker on webarchive if they have been 404ed,
+                        download risitas stickers on webarchive if they have been 404ed,
                         Default : False
   --no-match-author     If the name of the author is pogo and the current post author is
                         pogo111, it will be downloaded this disables this feature, Default :
@@ -153,14 +153,14 @@ risiparse -l risitas-links -o ~/tmp
 
 Ne pas oublier de mettre l'option `--debug` si rien n'a l'air de se passer pour avoir les détails.
 
-Enfin download-images s'assure que les images soit téléchargés, ce qui est utile pour risicompare et aussi
+Enfin download-images s'assure que les images soit téléchargées, ce qui est utile pour risicompare et aussi
 pour télécharger les sticker sur webarchive lorsque ceux-ci ont été 404ed.
 
 Le script essaiera de télécharger les posts de l'auteur ou d'un nom ressemblant à l'auteur, ex : pogo, pogo111, pogo112, les posts dont le nom de l'auteur contient pogo seront matchés et téléchargés. Utile si l'auteur s'est fait ban.
 
 ## Bugs connus
 
-*Ca à l'air d'être règlé après avoir passé sur le webengine de pyside6 sortie fin septembre*
+*Ca à l'air d'être règlé après être passé sur le webengine de pyside6 sorti fin septembre*
 
 Lors de la création de pdfs, le script peut se bloquer indéfiniment et le seul moyen de reprendre le contrôle
 est de le tuer via le gestionnaire de tâches (penser à quitter le terminal si SIGKILL ne marche pas)

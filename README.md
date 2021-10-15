@@ -41,41 +41,41 @@ Voir https://github.com/vichelisdelapaz/risicompare
 
 ```
 kenny $ risiparse -h
-usage: risiparse [-h] [--all-posts] [--no-pdf] [--debug] [--no-download]
-                 [-l LINKS [LINKS ...]] [--create-pdfs CREATE_PDFS [CREATE_PDFS ...]]
-                 [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
-                 [--no-resize-images] [--download-images] [--no-match-author]
-                 [--clear-database] [--no-database] [-o OUTPUT_DIR]
+usage: risiparse.py [-h] [--all-posts] [--no-pdf] [--debug] [--no-download]
+                    [-l LINKS [LINKS ...]] [--create-pdfs CREATE_PDFS [CREATE_PDFS ...]]
+                    [-i IDENTIFIERS [IDENTIFIERS ...]] [--authors AUTHORS [AUTHORS ...]]
+                    [--no-resize-images] [--download-images] [--no-match-author]
+                    [--clear-database] [--no-database] [-o OUTPUT_DIR]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --all-posts           Download all the posts from the author.Default : False
-  --no-pdf              Default : False, only download html
-  --debug               Verbose output, Default : False
-  --no-download         Default : False, Create pdfs directly from current dir or one
-                        specified by -o
+  --all-posts           Download all the posts from the author, Default : False
+  --no-pdf              Only download html, Default : False
+  --debug               Verbose output for the stdout, the debug file always has verbose
+                        output on, Default : False
+  --no-download         Create pdfs directly from current dir/risitas-html or one specified
+                        by -o, Default : False
   -l LINKS [LINKS ...], --links LINKS [LINKS ...]
                         The links file, or links from standard input, Default : current
                         dir/risitas-links
   --create-pdfs CREATE_PDFS [CREATE_PDFS ...]
-                        A list of html file path to create pdfs from. If this option is not
+                        A list of html files path to create pdfs from If this option is not
                         specified with --no-download the pdfs will be created for all html
                         files in risitas-html
   -i IDENTIFIERS [IDENTIFIERS ...], --identifiers IDENTIFIERS [IDENTIFIERS ...]
-                        Give a list of words that are going to be matched by the script,
-                        example: a message that has the keyword 'hors-sujet', by adding
-                        'hors-sujet' with this option, the script will match the message that
-                        has this keyword. Default : 'chapitre'
+                        A list of words that are going to be matched by the script, example:
+                        a message that has the keyword 'hors-sujet', by adding 'hors-sujet'
+                        with this option, the script will match the message that has this
+                        keyword, Default : 'chapitre'
   --authors AUTHORS [AUTHORS ...]
                         List of authors to be matched, by default the author of the first
-                        post author is considered as the author throughout the whole risitas,
-                        Default : Empty
+                        post author is considered as the author throughout the whole risitas
   --no-resize-images    When the script 'thinks' that the post contains images and that they
                         are chapters posted in screenshot, it will try to display them to
-                        their full width, Default : False
+                        their full scale, Default : False
   --download-images     Whether to download images locally If set, this will change all
                         img[src] link to point to the local images Also this will try to
-                        download risitas sticker on webarchive if they have been 404ed,
+                        download risitas stickers on webarchive if they have been 404ed,
                         Default : False
   --no-match-author     If the name of the author is pogo and the current post author is
                         pogo111, it will be downloaded this disables this feature, Default :

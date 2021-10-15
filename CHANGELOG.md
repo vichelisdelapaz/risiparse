@@ -1,3 +1,11 @@
+# 2.0.4
+
+- Forgot main() call, deleted it
+
+# 2.0.3
+
+- Fixed typo
+
 # 2.0.2
 
 - Changed append to append\_to\_html
