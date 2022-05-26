@@ -69,10 +69,6 @@ def make_app_dirs(output_dir: 'pathlib.Path') -> None:
 
 def get_selectors_and_site(
         link: str
-) -> (
-    Type['sites_selectors.Jvc'] |
-    Type['sites_selectors.Jvarchive'] |
-    Type['sites_selectors.Webarchive']
 ):
     """Select which set of selectors to use"""
     domain = get_domain(link)
