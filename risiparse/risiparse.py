@@ -151,7 +151,7 @@ class PageDownloader():
     def get_webarchive_img(
             self,
             link: str,
-    ) -> requests.models.Response | None:
+    ) -> requests.models.Response:
         """Get the image from webarchive."""
         logging.error(
             "The image at %s "
@@ -830,7 +830,7 @@ class RisitasHtmlFile():
         )
 
 
-def download_risitas(args) -> List['pathlib.Path'] | List:
+def download_risitas(args) -> List['pathlib.Path']:
     """Download risitas"""
     page_links = parse_input_links(args.links)
     risitas_html_file = None
