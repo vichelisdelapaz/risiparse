@@ -6,13 +6,11 @@ from typing import List, Iterator
 import logging
 import pathlib
 
-from PySide6.QtCore import QUrl
-from PySide6.QtGui import QPageLayout, QPageSize
-from PySide6 import QtWidgets
-from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
+from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QPageLayout, QPageSize
+from PyQt5 import QtWidgets, QtWebEngineWidgets
 
-
-class PdfPage(QWebEnginePage):
+class PdfPage(QtWebEngineWidgets.QWebEnginePage):
     """Produce a pdf from an html file"""
     def __init__(self, output_dir: pathlib.Path) -> None:
         super().__init__()
@@ -23,8 +21,11 @@ class PdfPage(QWebEnginePage):
         self.pdf_folder_path: pathlib.Path = output_dir / "risitas-pdf"
         self.pdf_files: List[pathlib.Path] = []
 
-        self.settings().setAttribute(
-            QWebEngineSettings.JavascriptEnabled, False
+        self.settings = (
+            QtWebEngineWidgets.QWebEngineSettings.globalSettings()
+        )
+        self.settings.setAttribute(
+            QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, False
         )
 
         self.setZoomFactor(1)
@@ -59,7 +60,7 @@ class PdfPage(QWebEnginePage):
     def _handle_load_finished(self) -> None:
         pdf_file = self.current_file.with_suffix(".pdf").name
         output_file: pathlib.Path = self.pdf_folder_path / pdf_file
-        self.printToPdf(str(output_file), layout=self.layout)
+        self.printToPdf(str(output_file), pageLayout=self.layout)
         logging.info("Creating %s", output_file)
 
     def _handle_printing_finished(self, html_file: str) -> None:
