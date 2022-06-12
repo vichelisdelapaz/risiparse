@@ -148,7 +148,7 @@ def create_pdfs(
         htmls_file_path: List['pathlib.Path'],
 ) -> None:
     """Create pdfs from a list of htmls"""
-    app = html_to_pdf.QtWidgets.QApplication([])
+    app = html_to_pdf.QtWidgets.QApplication(['--platform', 'minimal', '--disable-seccomp-filter-sandbox'])
     splitted_pdfs: Dict[str, List[pathlib.Path]] = {}
     html_folder_path = output_dir / "risitas-html"
     if not htmls_file_path:
